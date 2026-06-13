@@ -64,7 +64,29 @@ class AuthNotifier extends Notifier<AuthState> {
 
   Future<void> _checkAuthStatus() async {
     final isAuth = await _authService.isAuthenticated();
-    state = state.copyWith(isAuthenticated: isAuth, isCheckingAuth: false);
+    if (isAuth) {
+      try {
+        final cached = await _authService.getCachedUserInfo();
+        final token = await _authService.getAccessToken();
+        final user = LoginResponse(
+          accessToken: token ?? '',
+          refreshToken: '',
+          userId: cached['userId'] ?? '',
+          name: cached['name'] ?? '',
+          email: cached['email'] ?? '',
+          profilePicture: cached['profilePicture'] ?? '',
+        );
+        state = state.copyWith(
+          isAuthenticated: true,
+          user: user,
+          isCheckingAuth: false,
+        );
+      } catch (_) {
+        state = state.copyWith(isAuthenticated: false, isCheckingAuth: false);
+      }
+    } else {
+      state = state.copyWith(isAuthenticated: false, isCheckingAuth: false);
+    }
   }
 
   Future<void> login(String email, String password) async {
@@ -140,6 +162,26 @@ class AuthNotifier extends Notifier<AuthState> {
         confirmPassword: confirmPassword,
       );
       state = state.copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
+    }
+  }
+
+  Future<void> updateProfile({
+    required String name,
+    required String profilePicture,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final response = await _authService.updateProfile(
+        name: name,
+        profilePicture: profilePicture,
+      );
+      state = state.copyWith(
+        isLoading: false,
+        user: response,
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
       rethrow;

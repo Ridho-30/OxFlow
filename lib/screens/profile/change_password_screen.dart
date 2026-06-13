@@ -73,23 +73,13 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
   Color _getStrengthColor(int score) {
     if (score <= 1) return Colors.redAccent;
-    if (score <= 3) return const Color(0xFFF2C94C); // Yellow/Orange
-    return const Color(0xFF00E5A8); // Green
+    if (score <= 3) return const Color(0xFFF2C94C);
+    return const Color(0xFF00E5A8);
   }
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
-    // if (_getStrengthScore() < 4) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(
-    //       content: Text(
-    //         'Kata sandi baru belum memenuhi semua kriteria keamanan',
-    //       ),
-    //       backgroundColor: Colors.redAccent,
-    //     ),
-    //   );
-    //   return;
-    // }
+
     if (_oldPasswordController.text == _newPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -116,7 +106,6 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       if (!mounted) return;
       setState(() => _isLoading = false);
 
-      // Show success dialog then redirect to login
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -140,9 +129,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
       Future.delayed(const Duration(seconds: 2), () {
         if (!mounted) return;
-        // Logout local state & navigate to login
+
         ref.read(authProvider.notifier).logout();
-        Navigator.pop(context); // Pop dialog
+        Navigator.pop(context);
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => LoginScreen()),
@@ -164,10 +153,6 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // final int strengthScore = _getStrengthScore();
-    // final String strengthText = _getStrengthText(strengthScore);
-    // final Color strengthColor = _getStrengthColor(strengthScore);
-
     return Scaffold(
       backgroundColor: const Color(0xFF0B1220),
       appBar: AppBar(
@@ -190,7 +175,6 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Old Password
                 _buildLabel('Kata Sandi Lama'),
                 TextFormField(
                   controller: _oldPasswordController,
@@ -226,7 +210,6 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // New Password
                 _buildLabel('Kata Sandi Baru'),
                 TextFormField(
                   controller: _newPasswordController,
@@ -244,59 +227,6 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // // Password Strength Indicator
-                // if (_newPasswordController.text.isNotEmpty) ...[
-                //   Row(
-                //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                //     children: [
-                //       const Text(
-                //         'Kekuatan Kata Sandi',
-                //         style: TextStyle(color: Color(0xFF8A99AD), fontSize: 13),
-                //       ),
-                //       Text(
-                //         strengthText,
-                //         style: TextStyle(color: strengthColor, fontSize: 13, fontWeight: FontWeight.bold),
-                //       ),
-                //     ],
-                //   ),
-                //   const SizedBox(height: 8),
-                //   Row(
-                //     children: List.generate(4, (index) {
-                //       final bool isFilled = index < strengthScore;
-                //       return Expanded(
-                //         child: Container(
-                //           height: 5,
-                //           margin: EdgeInsets.only(
-                //             right: index < 3 ? 6 : 0,
-                //           ),
-                //           decoration: BoxDecoration(
-                //             color: isFilled ? strengthColor : const Color(0xFF141E2E),
-                //             borderRadius: BorderRadius.circular(2),
-                //           ),
-                //         ),
-                //       );
-                //     }),
-                //   ),
-                //   const SizedBox(height: 16),
-                // ],
-
-                // Password Requirements Checklist
-                // const Text(
-                //   'Kriteria Kata Sandi Baru:',
-                //   style: TextStyle(
-                //     color: Color(0xFF8A99AD),
-                //     fontSize: 13,
-                //     fontWeight: FontWeight.bold,
-                //   ),
-                // ),
-                // const SizedBox(height: 12),
-                // _buildChecklistItem('Minimal 8 karakter', _hasMinLength),
-                // _buildChecklistItem('Mengandung huruf besar (A-Z)', _hasUppercase),
-                // _buildChecklistItem('Mengandung angka (0-9)', _hasNumber),
-                // _buildChecklistItem('Mengandung simbol (!@#\$%^&*)', _hasSymbol),
-                // const SizedBox(height: 24),
-
-                // Confirm Password
                 _buildLabel('Konfirmasi Kata Sandi Baru'),
                 TextFormField(
                   controller: _confirmPasswordController,
@@ -318,7 +248,6 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 ),
                 const SizedBox(height: 40),
 
-                // Action Buttons
                 _isLoading
                     ? const Center(
                         child: CircularProgressIndicator(
@@ -396,29 +325,6 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       ),
     );
   }
-
-  // Widget _buildChecklistItem(String text, bool isChecked) {
-  //   return Padding(
-  //     padding: const EdgeInsets.only(bottom: 8),
-  //     child: Row(
-  //       children: [
-  //         Icon(
-  //           isChecked ? Icons.check_circle : Icons.circle_outlined,
-  //           color: isChecked ? const Color(0xFF00E5A8) : Colors.grey,
-  //           size: 18,
-  //         ),
-  //         const SizedBox(width: 8),
-  //         Text(
-  //           text,
-  //           style: TextStyle(
-  //             color: isChecked ? Colors.white : Colors.grey,
-  //             fontSize: 13,
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 
   InputDecoration _buildInputDecoration({
     required String hint,

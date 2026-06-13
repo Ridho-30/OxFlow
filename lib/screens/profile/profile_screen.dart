@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'edit_profile_screen.dart';
 import 'change_password_screen.dart';
 import '../auth/login_screen.dart';
+import '../../providers/auth_provider.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
-  void _showLogoutConfirmation(BuildContext context) {
+  void _showLogoutConfirmation(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -30,14 +32,16 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             ElevatedButton(
-              onPressed: () {
-                // Clear session mock and navigate to Login
+              onPressed: () async {
                 Navigator.pop(context); // Close dialog
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => LoginScreen()),
-                  (route) => false, // Remove all history
-                );
+                await ref.read(authProvider.notifier).logout();
+                if (context.mounted) {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => LoginScreen()),
+                    (route) => false, // Remove all history
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.redAccent,
@@ -55,7 +59,14 @@ class ProfileScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+    final user = authState.user;
+    final userName = user?.name ?? 'Pengguna';
+    final userEmail = user?.email ?? '';
+    final profilePicture = user?.profilePicture ?? '';
+    final hasValidPicture = profilePicture.startsWith('http');
+
     return Scaffold(
       backgroundColor: const Color(0xFF0B1220),
       appBar: AppBar(
@@ -69,24 +80,29 @@ class ProfileScreen extends StatelessWidget {
           child: Column(
             children: [
               const SizedBox(height: 20),
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 50,
-                backgroundColor: Color(0xFF141E2E),
-                child: Icon(Icons.person, size: 50, color: Color(0xFF00E5A8)),
+                backgroundColor: const Color(0xFF141E2E),
+                backgroundImage: hasValidPicture
+                    ? NetworkImage(profilePicture)
+                    : null,
+                child: !hasValidPicture
+                    ? const Icon(Icons.person, size: 50, color: Color(0xFF00E5A8))
+                    : null,
               ),
               const SizedBox(height: 20),
-              const Text(
-                'Richo Hanisyaputra',
-                style: TextStyle(
+              Text(
+                userName,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 5),
-              const Text(
-                'richo12@email.com',
-                style: TextStyle(color: Colors.grey, fontSize: 16),
+              Text(
+                userEmail,
+                style: const TextStyle(color: Colors.grey, fontSize: 16),
               ),
               const SizedBox(height: 40),
 
@@ -115,7 +131,7 @@ class ProfileScreen extends StatelessWidget {
                 icon: Icons.logout,
                 title: 'Keluar',
                 isLogout: true,
-                onTap: () => _showLogoutConfirmation(context),
+                onTap: () => _showLogoutConfirmation(context, ref),
               ),
             ],
           ),

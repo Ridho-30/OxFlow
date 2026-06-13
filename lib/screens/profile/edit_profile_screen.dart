@@ -1,47 +1,59 @@
-import 'package:flutter/material.dart';
-import '../scanner/gallery_preview_screen.dart';
+// lib/screens/profile/edit_profile_screen.dart
 
-class EditProfileScreen extends StatefulWidget {
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import '../../providers/auth_provider.dart';
+import '../../providers/photo_provider.dart';
+
+class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
 
   @override
-  State<EditProfileScreen> createState() => _EditProfileScreenState();
+  ConsumerState<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
-class _EditProfileScreenState extends State<EditProfileScreen> {
+class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
-
-  // Initial values (mocked)
-  final String _initialName = 'Richo Hanisyaputra';
-  final String _initialEmail = 'richo12@email.com';
+  final _imagePicker = ImagePicker();
 
   // Controllers
   late TextEditingController _nameController;
-  late TextEditingController _phoneController;
   late TextEditingController _dobController;
-  late TextEditingController _addressController;
-  late TextEditingController _jobController;
-  late String _selectedCurrency;
 
+  // State
   bool _hasChanges = false;
+  File? _selectedImage;
+  String? _currentPhotoUrl;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: _initialName);
+    _initializeControllers();
+  }
 
-    // Listen to changes to enable/disable Save button
+  void _initializeControllers() {
+    final user = ref.read(authProvider).user;
+
+    _nameController = TextEditingController(text: user?.name ?? '');
+    _dobController = TextEditingController();
+    _currentPhotoUrl = user?.profilePicture;
+
     _nameController.addListener(_checkForChanges);
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _dobController.dispose();
     super.dispose();
   }
 
   void _checkForChanges() {
-    final changed = _nameController.text != _initialName;
+    final user = ref.read(authProvider).user;
+    final changed =
+        _nameController.text != (user?.name ?? '') || _selectedImage != null;
 
     if (changed != _hasChanges) {
       setState(() {
@@ -50,299 +62,365 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.tryParse(_dobController.text) ?? DateTime(2000),
-      firstDate: DateTime(1950),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF00E5A8),
-              onPrimary: Colors.black,
-              surface: Color(0xFF141E2E),
-              onSurface: Colors.white,
-            ),
-            dialogBackgroundColor: const Color(0xFF0B1220),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      setState(() {
-        _dobController.text = "${picked.toLocal()}".split(' ')[0];
-        _checkForChanges();
-      });
-    }
-  }
-
-  void _showImagePicker(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF141E2E),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[600],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Ubah Foto Profil',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              ListTile(
-                leading: const Icon(Icons.camera_alt, color: Color(0xFF00E5A8)),
-                title: const Text(
-                  'Ambil Foto (Kamera)',
-                  style: TextStyle(color: Colors.white),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Kamera dibuka (Simulasi)')),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.photo_library,
-                  color: Color(0xFF00E5A8),
-                ),
-                title: const Text(
-                  'Pilih dari Galeri',
-                  style: TextStyle(color: Colors.white),
-                ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          GalleryPreviewScreen(imagePath: image.path),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.delete_outline,
-                  color: Colors.redAccent,
-                ),
-                title: const Text(
-                  'Hapus Foto',
-                  style: TextStyle(color: Colors.redAccent),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('Foto dihapus')));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.close, color: Colors.grey),
-                title: const Text(
-                  'Batal',
-                  style: TextStyle(color: Colors.grey),
-                ),
-                onTap: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _saveProfile() {
-    if (_formKey.currentState!.validate()) {
-      // Perform saving logic (mocked)
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profil berhasil diperbarui!'),
-          backgroundColor: Color(0xFF0C2B29),
-        ),
+  // ── Pick image from gallery ──
+  Future<void> _pickImageFromGallery() async {
+    try {
+      final image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
       );
-      Navigator.pop(context);
+
+      if (image != null) {
+        setState(() {
+          _selectedImage = File(image.path);
+          _hasChanges = true;
+        });
+      }
+    } catch (e) {
+      _showErrorSnackBar('Failed to pick image: $e');
     }
+  }
+
+  // ── Take photo with camera ──
+  Future<void> _takePhoto() async {
+    try {
+      final image = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 80,
+      );
+
+      if (image != null) {
+        setState(() {
+          _selectedImage = File(image.path);
+          _hasChanges = true;
+        });
+      }
+    } catch (e) {
+      _showErrorSnackBar('Failed to take photo: $e');
+    }
+  }
+
+  // ── Show photo source selection dialog ──
+  void _showPhotoSourceDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF0B1220),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text('Pilih Foto', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.image, color: Color(0xFF00E5A8)),
+              title: const Text(
+                'Dari Galeri',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImageFromGallery();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera, color: Color(0xFF00E5A8)),
+              title: const Text(
+                'Ambil Foto',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _takePhoto();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Save profile with photo upload ──
+  Future<void> _saveProfile() async {
+    if (_formKey.currentState?.validate() ?? false) {
+      final authNotifier = ref.read(authProvider.notifier);
+      final user = ref.read(authProvider).user;
+
+      // Upload photo if selected
+      String photoUrlToSave = _currentPhotoUrl ?? '';
+
+      if (_selectedImage != null) {
+        try {
+          final photoNotifier = ref.read(photoUploadProvider.notifier);
+
+          // Show loading dialog
+          if (!mounted) return;
+          _showLoadingDialog('Uploading photo...');
+
+          // Upload to Supabase
+          final photoUrl = await photoNotifier.uploadPhoto(
+            photoFile: _selectedImage!,
+            userId: user?.userId ?? '',
+          );
+
+          photoUrlToSave = photoUrl ?? _currentPhotoUrl ?? '';
+
+          if (mounted) Navigator.pop(context); // Close loading dialog
+        } catch (e) {
+          if (mounted) {
+            Navigator.pop(context); // Close loading dialog
+            _showErrorSnackBar('Failed to upload photo: $e');
+          }
+          return;
+        }
+      }
+
+      // Update profile with new name and photo URL
+      try {
+        if (!mounted) return;
+        _showLoadingDialog('Saving profile...');
+
+        await authNotifier.updateProfile(
+          name: _nameController.text,
+          profilePicture: photoUrlToSave,
+        );
+
+        if (mounted) {
+          Navigator.pop(context); // Close loading dialog
+          _showSuccessSnackBar('Profile updated successfully!');
+
+          // Clear selection after success
+          setState(() {
+            _selectedImage = null;
+            _currentPhotoUrl = photoUrlToSave;
+            _hasChanges = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.pop(context); // Close loading dialog
+          _showErrorSnackBar('Failed to save profile: $e');
+        }
+      }
+    }
+  }
+
+  // ── Dialogs & SnackBars ──
+  void _showLoadingDialog(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF0B1220),
+        content: Row(
+          children: [
+            const CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00E5A8)),
+            ),
+            const SizedBox(width: 16),
+            Text(message, style: const TextStyle(color: Colors.white)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFF00E5A8),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(authProvider).user;
+    final photoUploadState = ref.watch(photoUploadProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFF0B1220),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0B1220),
         elevation: 0,
+        title: const Text(
+          'Edit Profile',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Edit Profil',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          TextButton(
-            onPressed: _hasChanges ? _saveProfile : null,
-            child: Text(
-              'Simpan',
-              style: TextStyle(
-                color: _hasChanges ? const Color(0xFF00E5A8) : Colors.grey,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          ),
-        ],
       ),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Profile Picture Section
-                Center(
-                  child: Column(
-                    children: [
-                      const Stack(
-                        alignment: Alignment.bottomRight,
-                        children: [
-                          CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Color(0xFF141E2E),
-                            child: Icon(
-                              Icons.person,
-                              size: 55,
-                              color: Color(0xFF00E5A8),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: () => _showImagePicker(context),
-                        child: const Text(
-                          'Ubah Foto',
-                          style: TextStyle(
-                            color: Color(0xFF00E5A8),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Form Fields
-                _buildLabel('Nama Lengkap'),
-                TextFormField(
-                  controller: _nameController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _buildInputDecoration(
-                    hint: 'Masukkan nama lengkap',
-                  ),
-                  validator: (value) => value == null || value.isEmpty
-                      ? 'Nama tidak boleh kosong'
-                      : null,
-                ),
-                const SizedBox(height: 18),
-
-                _buildLabel('Email (Tidak dapat diubah)'),
-                TextFormField(
-                  initialValue: _initialEmail,
-                  enabled: false,
-                  style: const TextStyle(color: Colors.grey),
-                  decoration: _buildInputDecoration(
-                    hint: '',
-                  ).copyWith(fillColor: const Color(0xFF0E1724)),
-                ),
-                const SizedBox(height: 18),
-
-                // Bottom Buttons
-                Row(
+        padding: const EdgeInsets.all(24),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Photo Section ──
+              Center(
+                child: Stack(
+                  alignment: Alignment.bottomRight,
                   children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFF1F2E46)),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                    Container(
+                      width: 160,
+                      height: 160,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFF00E5A8),
+                          width: 3,
                         ),
-                        child: const Text(
-                          'Batal',
-                          style: TextStyle(color: Colors.grey),
+                        image: DecorationImage(
+                          image: _selectedImage != null
+                              ? FileImage(_selectedImage!)
+                              : _currentPhotoUrl != null &&
+                                    _currentPhotoUrl!.isNotEmpty
+                              ? NetworkImage(_currentPhotoUrl!)
+                              : const AssetImage(
+                                      'assets/images/placeholder_avatar.png',
+                                    )
+                                    as ImageProvider,
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: _hasChanges ? _saveProfile : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00E5A8),
-                          disabledBackgroundColor: const Color(0xFF141E2E),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                    GestureDetector(
+                      onTap: _showPhotoSourceDialog,
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFF00E5A8),
+                          border: Border.all(
+                            color: const Color(0xFF0B1220),
+                            width: 3,
                           ),
                         ),
-                        child: Text(
-                          'Simpan Perubahan',
-                          style: TextStyle(
-                            color: _hasChanges ? Colors.black : Colors.grey,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          color: Color(0xFF0B1220),
+                          size: 24,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
-              ],
-            ),
+              ),
+              const SizedBox(height: 12),
+              Center(
+                child: Text(
+                  'Tap to change photo',
+                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                ),
+              ),
+
+              // ── Photo Upload Status ──
+              if (photoUploadState.error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      border: Border.all(color: Colors.red),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      photoUploadState.error!,
+                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                    ),
+                  ),
+                ),
+
+              const SizedBox(height: 32),
+
+              // ── Name Field ──
+              _buildLabel('Full Name'),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _nameController,
+                style: const TextStyle(color: Colors.white),
+                decoration: _buildInputDecoration(hint: 'Enter your full name'),
+                validator: (value) {
+                  if (value?.isEmpty ?? true) {
+                    return 'Name cannot be empty';
+                  }
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 32),
+
+              // ── Save Button ──
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: (_hasChanges && !photoUploadState.isLoading)
+                      ? _saveProfile
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00E5A8),
+                    disabledBackgroundColor: Colors.grey[700],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: photoUploadState.isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.black,
+                            ),
+                          ),
+                        )
+                      : const Text(
+                          'Save Changes',
+                          style: TextStyle(
+                            color: Color(0xFF0B1220),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8, left: 4),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-        ),
+  // ── Widget Builders ──
+  Widget _buildLabel(String label) {
+    return Text(
+      label,
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
       ),
     );
   }
