@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../dashboard/dashboard_screen.dart';
 import '../navigation/main_navigation_screen.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
