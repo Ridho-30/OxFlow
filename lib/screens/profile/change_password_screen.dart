@@ -24,18 +24,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   bool _obscureNew = true;
   bool _obscureConfirm = true;
 
-  bool _hasMinLength = false;
-  bool _hasUppercase = false;
-  bool _hasNumber = false;
-  bool _hasSymbol = false;
-
   bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _newPasswordController.addListener(_validatePassword);
-  }
 
   @override
   void dispose() {
@@ -43,38 +32,6 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
-  }
-
-  void _validatePassword() {
-    final value = _newPasswordController.text;
-    setState(() {
-      _hasMinLength = value.length >= 8;
-      _hasUppercase = value.contains(RegExp(r'[A-Z]'));
-      _hasNumber = value.contains(RegExp(r'[0-9]'));
-      _hasSymbol = value.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>]'));
-    });
-  }
-
-  int _getStrengthScore() {
-    int score = 0;
-    if (_hasMinLength) score++;
-    if (_hasUppercase) score++;
-    if (_hasNumber) score++;
-    if (_hasSymbol) score++;
-    return score;
-  }
-
-  String _getStrengthText(int score) {
-    if (_newPasswordController.text.isEmpty) return '';
-    if (score <= 1) return 'Lemah';
-    if (score <= 3) return 'Sedang';
-    return 'Kuat';
-  }
-
-  Color _getStrengthColor(int score) {
-    if (score <= 1) return Colors.redAccent;
-    if (score <= 3) return const Color(0xFFF2C94C);
-    return const Color(0xFF00E5A8);
   }
 
   Future<void> _handleSubmit() async {
