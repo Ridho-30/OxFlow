@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../dashboard/dashboard_screen.dart';
 import '../scanner/scanner_screen.dart';
+import '../scanner/input_manual_screen.dart';
+import '../scanner/gallery_preview_screen.dart';
+import 'package:image_picker/image_picker.dart';
 import '../budget/budget_screen.dart';
 import '../laporan/laporan_screen.dart';
 import '../profile/profile_screen.dart';
@@ -121,10 +124,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         setState(() {
                           _isPopupOpen = false;
                         });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Input manual diklik'),
-                            backgroundColor: Color(0xFF141E2E),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const InputManualScreen(),
                           ),
                         );
                       },
@@ -134,16 +137,38 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       iconColor: const Color(0xFFA55EEA),
                       bgColor: const Color(0xFF251A3B),
                       label: 'Dari galeri',
-                      onTap: () {
+                      onTap: () async {
                         setState(() {
                           _isPopupOpen = false;
                         });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Pilih dari galeri diklik'),
-                            backgroundColor: Color(0xFF141E2E),
-                          ),
-                        );
+                        final ImagePicker picker = ImagePicker();
+                        try {
+                          final XFile? image = await picker.pickImage(
+                            source: ImageSource.gallery,
+                            imageQuality: 85,
+                          );
+                          if (image != null) {
+                            if (!mounted) return;
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => GalleryPreviewScreen(
+                                  imagePath: image.path,
+                                ),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (!mounted) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const GalleryPreviewScreen(
+                                imagePath: 'assets/images/struk_mock.png',
+                              ),
+                            ),
+                          );
+                        }
                       },
                     ),
                   ],
