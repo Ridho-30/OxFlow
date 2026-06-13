@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'gallery_preview_screen.dart';
 
 class ScannerScreen extends StatelessWidget {
   const ScannerScreen({super.key});
@@ -94,7 +96,36 @@ class ScannerScreen extends StatelessWidget {
               height: 55,
 
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () async {
+                  final ImagePicker picker = ImagePicker();
+                  try {
+                    final XFile? image = await picker.pickImage(
+                      source: ImageSource.camera,
+                      imageQuality: 85,
+                    );
+                    if (image != null) {
+                      if (!context.mounted) return;
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => GalleryPreviewScreen(
+                            imagePath: image.path,
+                          ),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const GalleryPreviewScreen(
+                          imagePath: 'assets/images/struk_mock.png',
+                        ),
+                      ),
+                    );
+                  }
+                },
 
                 style:
                     ElevatedButton
