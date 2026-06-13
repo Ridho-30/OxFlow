@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'providers/auth_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/navigation/main_navigation_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
-  runApp(
-    const ProviderScope(
-      child: OxFlowApp(),
-    ),
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load();
+  await Supabase.initialize(
+    url: dotenv.env['SUPABASE_URL'] ?? '',
+    publishableKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
   );
+
+  runApp(const ProviderScope(child: OxFlowApp()));
 }
 
 class OxFlowApp extends StatelessWidget {
@@ -60,8 +65,7 @@ class _AuthGate extends ConsumerWidget {
               ),
               SizedBox(height: 32),
               CircularProgressIndicator(
-                valueColor:
-                    AlwaysStoppedAnimation<Color>(Color(0xFF00E5A8)),
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00E5A8)),
               ),
             ],
           ),

@@ -8,11 +8,9 @@ class ErrorHandler {
       return error.message.isNotEmpty
           ? error.message
           : 'Data tidak valid. Periksa kembali input Anda.';
-    }
-    // else if (error is UnauthorizedException) {
-    //   return 'Email atau kata sandi salah.';
-    // }
-    else if (error is ForbiddenException) {
+    } else if (error is UnauthorizedException) {
+      return 'Email atau kata sandi salah.';
+    } else if (error is ForbiddenException) {
       return 'Anda tidak memiliki akses ke resource ini.';
     } else if (error is NotFoundException) {
       return 'Data tidak ditemukan.';

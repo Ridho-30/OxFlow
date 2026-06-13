@@ -32,6 +32,8 @@ class AuthService {
     await _secureStorage.write(key: 'user_name', value: loginResponse.name);
     await _secureStorage.write(key: 'user_email', value: loginResponse.email);
     await _secureStorage.write(key: 'user_id', value: loginResponse.userId);
+    await _secureStorage.write(
+        key: 'user_profile_picture', value: loginResponse.profilePicture);
 
     return loginResponse;
   }
@@ -65,6 +67,8 @@ class AuthService {
     await _secureStorage.write(key: 'user_name', value: loginResponse.name);
     await _secureStorage.write(key: 'user_email', value: loginResponse.email);
     await _secureStorage.write(key: 'user_id', value: loginResponse.userId);
+    await _secureStorage.write(
+        key: 'user_profile_picture', value: loginResponse.profilePicture);
 
     return loginResponse;
   }
@@ -109,6 +113,30 @@ class AuthService {
     );
   }
 
+  // ── Update Profile (authenticated — PUT /api/users/profile) ────────────────
+  Future<LoginResponse> updateProfile({
+    required String name,
+    required String profilePicture,
+  }) async {
+    final response = await _apiClient.put(
+      ApiEndpoints.updateProfile,
+      data: {
+        'name': name,
+        'profile_picture': profilePicture,
+      },
+    );
+
+    final payload = response['data'] ?? response;
+    final updatedResponse = LoginResponse.fromJson(payload);
+
+    // Update local cache
+    await _secureStorage.write(key: 'user_name', value: updatedResponse.name);
+    await _secureStorage.write(
+        key: 'user_profile_picture', value: updatedResponse.profilePicture);
+
+    return updatedResponse;
+  }
+
   // ── Logout ─────────────────────────────────────────────────────────────────
   Future<void> logout() async {
     try {
@@ -134,6 +162,7 @@ class AuthService {
       'name': await _secureStorage.read(key: 'user_name'),
       'email': await _secureStorage.read(key: 'user_email'),
       'userId': await _secureStorage.read(key: 'user_id'),
+      'profilePicture': await _secureStorage.read(key: 'user_profile_picture'),
     };
   }
 
