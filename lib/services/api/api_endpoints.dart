@@ -23,9 +23,8 @@ class ApiEndpoints {
   static String transactionDetail(String id) => '/transactions/$id';
   
   // Budget
-  static const String budgetCurrent = '/budget/current';
-  static const String budgetSet = '/budget/set-budget';
-  static const String budgetUpdate = '/budget/update-budget';
+  static const String budget = '/budget';
+  static const String budgetStatus = '/budget/status';
   
   // Laporan
   static const String laporanDaily = '/laporan/daily';

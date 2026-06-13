@@ -246,7 +246,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authProvider).user;
     final photoUploadState = ref.watch(photoUploadProvider);
 
     return Scaffold(

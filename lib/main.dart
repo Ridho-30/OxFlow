@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'providers/auth_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/navigation/main_navigation_screen.dart';
@@ -8,6 +9,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Initialize locale data for intl (e.g. DateFormat with 'id_ID')
+  await initializeDateFormatting('id_ID', null);
   await dotenv.load();
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL'] ?? '',
