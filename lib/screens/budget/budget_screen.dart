@@ -20,15 +20,13 @@ class BudgetScreen extends ConsumerWidget {
       body: SafeArea(
         child: budgetState.isLoading
             ? const Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFF00E5A8),
-                ),
+                child: CircularProgressIndicator(color: Color(0xFF00E5A8)),
               )
             : budgetState.error != null
-                ? _buildError(context, ref, budgetState.error!)
-                : budgetState.hasNoBudget
-                    ? _buildNoBudget(context, ref)
-                    : _buildContent(context, ref, budgetState.budget!),
+            ? _buildError(context, ref, budgetState.error!)
+            : budgetState.hasNoBudget
+            ? _buildNoBudget(context, ref)
+            : _buildContent(context, ref, budgetState.budget!),
       ),
     );
   }
@@ -41,8 +39,7 @@ class BudgetScreen extends ConsumerWidget {
     BudgetModel budget,
   ) {
     final now = DateTime.now();
-    final monthLabel =
-        DateFormat('MMMM yyyy', 'id_ID').format(now);
+    final monthLabel = DateFormat('MMMM yyyy', 'id_ID').format(now);
 
     return RefreshIndicator(
       color: const Color(0xFF00E5A8),
@@ -197,10 +194,7 @@ class BudgetScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right,
-              color: Color(0xFF8A99AD),
-            ),
+            const Icon(Icons.chevron_right, color: Color(0xFF8A99AD)),
           ],
         ),
       ),
@@ -217,7 +211,7 @@ class BudgetScreen extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'TIPS KEUANGAN',
+          'TIPS KEUANGAN:',
           style: TextStyle(
             color: Color(0xFF8A99AD),
             fontSize: 13,
@@ -268,8 +262,7 @@ class BudgetScreen extends ConsumerWidget {
         },
         {
           'emoji': '📋',
-          'text':
-              'Buat daftar prioritas pengeluaran agar lebih terkontrol.',
+          'text': 'Buat daftar prioritas pengeluaran agar lebih terkontrol.',
         },
       ];
     } else if (budget.isWarning) {
@@ -288,13 +281,11 @@ class BudgetScreen extends ConsumerWidget {
     return [
       {
         'emoji': '✅',
-        'text':
-            'Budget kamu masih aman. Tetap jaga pengeluaran ya!',
+        'text': 'Budget kamu masih aman. Tetap jaga pengeluaran ya!',
       },
       {
         'emoji': '💰',
-        'text':
-            'Sisihkan sisa budget untuk tabungan atau investasi.',
+        'text': 'Sisihkan sisa budget untuk tabungan atau investasi.',
       },
     ];
   }
@@ -373,11 +364,7 @@ class BudgetScreen extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              color: Colors.redAccent,
-              size: 56,
-            ),
+            const Icon(Icons.error_outline, color: Colors.redAccent, size: 56),
             const SizedBox(height: 16),
             const Text(
               'Terjadi Kesalahan',

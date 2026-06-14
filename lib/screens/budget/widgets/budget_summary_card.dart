@@ -21,14 +21,14 @@ class BudgetSummaryCard extends StatelessWidget {
     final Color statusColor = budget.isExceeded
         ? const Color(0xFFEB5757)
         : budget.isWarning
-            ? const Color(0xFFF2C94C)
-            : const Color(0xFF00E5A8);
+        ? const Color(0xFFF2C94C)
+        : const Color(0xFF00E5A8);
 
     final String statusLabel = budget.isExceeded
         ? '🔴 MELEBIHI BATAS'
         : budget.isWarning
-            ? '⚠️ PERINGATAN'
-            : '✅ AMAN';
+        ? '⚠️ PERINGATAN'
+        : ' 🟢 AMAN';
 
     return Container(
       decoration: BoxDecoration(
@@ -90,7 +90,7 @@ class BudgetSummaryCard extends StatelessWidget {
                     _MetricTile(
                       label: 'Terpakai',
                       value: fmt.format(budget.totalSpentThisMonth),
-                      color: statusColor,
+                      color: const Color(0xFFEB5757),
                       icon: Icons.trending_up_rounded,
                     ),
                     const SizedBox(width: 12),
@@ -155,10 +155,7 @@ class BudgetSummaryCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             budget.description,
-                            style: TextStyle(
-                              color: statusColor,
-                              fontSize: 12,
-                            ),
+                            style: TextStyle(color: statusColor, fontSize: 12),
                           ),
                         ),
                       ],
