@@ -17,7 +17,6 @@ class BottomNavbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 80,
       padding: const EdgeInsets.only(top: 8, bottom: 8),
       decoration: const BoxDecoration(
         color: Color(0xFF141E2E),
@@ -26,6 +25,7 @@ class BottomNavbar extends StatelessWidget {
         ),
       ),
       child: SafeArea(
+        top: false,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [

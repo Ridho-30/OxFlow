@@ -14,7 +14,9 @@ class LoggingInterceptor extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    print('← RESPONSE: ${response.statusCode}');
+    final bodyStr = response.data.toString();
+    final preview = bodyStr.length > 300 ? bodyStr.substring(0, 300) + '...' : bodyStr;
+    print('← RESPONSE [${response.statusCode}] ${response.requestOptions.path}: $preview');
     super.onResponse(response, handler);
   }
 

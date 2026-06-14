@@ -32,8 +32,8 @@ class ApiEndpoints {
   static const String laporanMonthly = '/laporan/monthly';
   static const String laporanExport = '/laporan/exportLaporan';
   
-  // Analysis
-  static const String analysisSpendingByCategory = '/analysis/spending-by-category';
-  static const String analysisTrend = '/analysis/spending-trend';
-  static const String analysisBudgetStatus = '/analysis/budget-status';
+  // Analysis / Analytics
+  static const String analyticsDashboard = '/analytics/dashboard';
+  static const String analyticsByCategory = '/analytics/by-category';
+  static const String analyticsTrend = '/analytics/trend';
 }

@@ -284,10 +284,7 @@ class _LaporanScreenState extends State<LaporanScreen> {
                   ),
                 )
               : IconButton(
-                  icon: const Icon(
-                    Icons.picture_as_pdf,
-                    color: Color(0xFF00E5A8),
-                  ),
+                  icon: const Icon(Icons.download, color: Color(0xFF00E5A8)),
                   tooltip: 'Unduh laporan PDF',
                   onPressed: _downloadPDF,
                 ),
