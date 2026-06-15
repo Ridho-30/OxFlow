@@ -1,68 +1,55 @@
 // lib/services/photo_service.dart
 
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'api/api_client.dart';
 
 class PhotoService {
+  final ApiClient _apiClient;
   final _secureStorage = const FlutterSecureStorage();
-  final _supabase = Supabase.instance.client;
 
-  static const String _bucketName = 'profile-pictures';
-  static const String _storagePath = 'profile-pictures';
+  PhotoService(this._apiClient);
 
-  /// Upload photo to Supabase storage
+  /// Upload photo to Backend API
   /// Returns the public URL of the uploaded photo
   Future<String> uploadProfilePhoto({
     required File photoFile,
     required String userId,
   }) async {
     try {
-      // Generate unique file name with timestamp
-      final fileName =
-          'profile_${userId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final fullPath = '$_storagePath/$fileName';
+      final response = await _apiClient.uploadFile(
+        '/users/profile/photo',
+        photoFile.path,
+        fieldName: 'photo',
+      );
 
-      // Upload to Supabase storage
-      await _supabase.storage
-          .from(_bucketName)
-          .upload(
-            fullPath,
-            photoFile,
-            fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
-          );
+      final payload = response['data'] ?? response;
+      final String photoUrl = payload['profile_picture']?.toString() ?? '';
 
-      // Get public URL
-      final publicUrl = _supabase.storage
-          .from(_bucketName)
-          .getPublicUrl(fullPath);
+      if (photoUrl.isEmpty) {
+        throw PhotoUploadException('Gagal mendapatkan URL foto profil dari server.');
+      }
 
       // Cache the photo URL locally
-      await _secureStorage.write(key: 'user_profile_picture', value: publicUrl);
+      await _secureStorage.write(key: 'user_profile_picture', value: photoUrl);
 
-      return publicUrl;
-    } on StorageException catch (e) {
-      throw PhotoUploadException('Upload failed: ${e.message}');
+      return photoUrl;
+    } on PhotoUploadException {
+      rethrow;
     } catch (e) {
-      throw PhotoUploadException('Unexpected error: $e');
+      final msg = e.toString();
+      if (msg.contains('401') || msg.contains('Unauthorized')) {
+        throw PhotoUploadException('Sesi telah habis. Silakan login ulang.');
+      }
+      throw PhotoUploadException('Gagal upload foto: $msg');
     }
   }
 
-  /// Delete old profile photo from storage
+  /// Delete old profile photo from storage (No-op on client, handled implicitly or ignored)
   Future<void> deleteProfilePhoto({required String photoUrl}) async {
-    try {
-      // Extract file path from public URL
-      // Format: https://...storage.supabase.co/object/public/bucket/path
-      if (!photoUrl.contains(_bucketName)) return;
-
-      final pathStart = photoUrl.indexOf(_bucketName) + _bucketName.length + 1;
-      final filePath = photoUrl.substring(pathStart);
-
-      await _supabase.storage.from(_bucketName).remove([filePath]);
-    } catch (e) {
-      // Log error but don't throw - deletion is not critical
-      print('Failed to delete old photo: $e');
-    }
+    // Left as no-op since direct Supabase storage manipulation from client is bypassed
+    debugPrint('[PhotoService] deleteProfilePhoto called for $photoUrl');
   }
 
   /// Get cached profile photo URL

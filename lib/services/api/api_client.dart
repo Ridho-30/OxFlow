@@ -129,21 +129,28 @@ class ApiClient {
   Exception _handleError(DioException error) {
     if (error.response != null) {
       final statusCode = error.response!.statusCode;
-      final message = error.response!.data['message'] ?? 'Error occurred';
+      final data = error.response!.data;
+      final message = data['message'] ?? 'Error occurred';
+      final errorsRaw = data['errors'];
+
+      String fullMessage = message;
+      if (errorsRaw != null && errorsRaw is List && errorsRaw.isNotEmpty) {
+        fullMessage = '$message: ${errorsRaw.join(', ')}';
+      }
       
       switch (statusCode) {
         case 400:
-          return BadRequestException(message);
+          return BadRequestException(fullMessage);
         case 401:
-          return UnauthorizedException(message);
+          return UnauthorizedException(fullMessage);
         case 403:
-          return ForbiddenException(message);
+          return ForbiddenException(fullMessage);
         case 404:
-          return NotFoundException(message);
+          return NotFoundException(fullMessage);
         case 500:
-          return ServerException(message);
+          return ServerException(fullMessage);
         default:
-          return ApiException('Error $statusCode: $message');
+          return ApiException('Error $statusCode: $fullMessage');
       }
     } else {
       return ApiException(error.message ?? 'Network error');

@@ -55,7 +55,7 @@ class DashboardNotifier extends Notifier<DashboardState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final dashboard = await _service.getDashboardData();
-      final recent = await _service.getRecentTransactions(limit: 5);
+      final recent = await _service.getRecentTransactions(limit: 4);
       state = DashboardState(
         isLoading: false,
         dashboardData: dashboard,

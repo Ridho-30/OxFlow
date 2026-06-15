@@ -92,6 +92,8 @@ class TransactionModel {
       cat = CategoryModel.fromJson(json['category'] as Map<String, dynamic>);
     } else if (categoryLookup.containsKey(catId)) {
       cat = CategoryModel(id: catId, nameCategory: categoryLookup[catId]!);
+    } else if (json['category_name'] != null) {
+      cat = CategoryModel(id: catId, nameCategory: json['category_name'].toString());
     } else if (json['kategori_nama'] != null) {
       cat = CategoryModel.fromJson(json);
     }
@@ -123,7 +125,7 @@ class TransactionModel {
       updatedAt: json['updated_at'] != null
           ? DateTime.tryParse(json['updated_at'].toString())
           : null,
-      storeName: json['store_name']?.toString() ?? json['merchant']?.toString(),
+      storeName: json['store_name']?.toString() ?? json['merchant']?.toString() ?? json['nama_toko']?.toString(),
     );
   }
 
