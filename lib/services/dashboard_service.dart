@@ -66,7 +66,7 @@ class DashboardService {
 
     if (value is Map<String, dynamic>) {
       // Common keys to look for
-      for (final key in ['data', 'categories', 'items', 'result', 'results']) {
+      for (final key in ['data', 'transactions', 'categories', 'items', 'result', 'results']) {
         if (value[key] != null) {
           final found = _extractList(value[key]);
           if (found.isNotEmpty) return found;
@@ -78,7 +78,7 @@ class DashboardService {
   }
 
   /// GET /api/transactions — fetch recent transactions with resolved category names
-  Future<List<TransactionModel>> getRecentTransactions({int limit = 5}) async {
+  Future<List<TransactionModel>> getRecentTransactions({int limit = 4}) async {
     try {
       // Fetch categories and transactions concurrently
       final categoryLookup = await _fetchCategoryLookup();
@@ -87,6 +87,7 @@ class DashboardService {
         ApiEndpoints.transactions,
         queryParameters: {
           'limit': limit,
+          'page': 1,
           'sort': 'date_desc',
         },
       );
@@ -95,19 +96,27 @@ class DashboardService {
         debugPrint('[DashboardService] Raw transactions response: $response');
       }
 
-      final list = _extractList(response);
+      // Try to extract from response directly OR from response['data']
+      List<dynamic> list = _extractList(response);
+      if (list.isEmpty && response['data'] != null) {
+        list = _extractList(response['data']);
+      }
 
       if (kDebugMode) {
         debugPrint('[DashboardService] Extracted transaction list (${list.length} items)');
       }
 
-      return list
+      final all = list
           .whereType<Map<String, dynamic>>()
           .map((item) => TransactionModel.fromJsonWithCategories(
                 item,
                 categoryLookup,
               ))
           .toList();
+
+      // Sort by date descending and return only the first `limit` items
+      all.sort((a, b) => b.date.compareTo(a.date));
+      return all.take(limit).toList();
     } catch (e) {
       debugPrint('[DashboardService] getRecentTransactions error: $e');
       return [];

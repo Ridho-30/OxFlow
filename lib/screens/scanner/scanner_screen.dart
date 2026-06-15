@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'gallery_preview_screen.dart';
+import 'ocr_processing_screen.dart';
 
 class ScannerScreen extends StatelessWidget {
   const ScannerScreen({super.key});
@@ -105,10 +105,10 @@ class ScannerScreen extends StatelessWidget {
                     );
                     if (image != null) {
                       if (!context.mounted) return;
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => GalleryPreviewScreen(
+                          builder: (context) => OcrProcessingScreen(
                             imagePath: image.path,
                           ),
                         ),
@@ -116,10 +116,10 @@ class ScannerScreen extends StatelessWidget {
                     }
                   } catch (e) {
                     if (!context.mounted) return;
-                    Navigator.push(
+                    Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const GalleryPreviewScreen(
+                        builder: (context) => const OcrProcessingScreen(
                           imagePath: 'assets/images/struk_mock.png',
                         ),
                       ),

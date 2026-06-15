@@ -1,9 +1,12 @@
+// lib/screens/profile/profile_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'edit_profile_screen.dart';
 import 'change_password_screen.dart';
 import '../auth/login_screen.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/profile/profile_menu_item.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -11,57 +14,54 @@ class ProfileScreen extends ConsumerWidget {
   void _showLogoutConfirmation(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF141E2E),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text(
-            'Konfirmasi Keluar',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF141E2E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Konfirmasi Keluar',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          'Apakah Anda yakin ingin keluar? Anda akan diminta login kembali.',
+          style: TextStyle(color: Color(0xFF8A99AD)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Batal', style: TextStyle(color: Colors.grey)),
           ),
-          content: const Text(
-            'Apakah Anda yakin ingin keluar? Anda akan diminta login kembali.',
-            style: TextStyle(color: Color(0xFF8A99AD)),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await ref.read(authProvider.notifier).logout();
+              if (context.mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => LoginScreen()),
+                  (route) => false,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text(
+              'Keluar',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Batal',
-                style: TextStyle(color: Colors.grey),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.pop(context); // Close dialog
-                await ref.read(authProvider.notifier).logout();
-                if (context.mounted) {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => LoginScreen()),
-                    (route) => false, // Remove all history
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const Text(
-                'Keluar',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authProvider);
-    final user = authState.user;
+    // select() only rebuilds this screen when the user object changes,
+    // not when isLoading / error / isCheckingAuth changes.
+    final user = ref.watch(authProvider.select((s) => s.user));
     final userName = user?.name ?? 'Pengguna';
     final userEmail = user?.email ?? '';
     final profilePicture = user?.profilePicture ?? '';
@@ -72,7 +72,10 @@ class ProfileScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFF0B1220),
         elevation: 0,
-        title: const Text('Profil', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Profil',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -80,17 +83,21 @@ class ProfileScreen extends ConsumerWidget {
           child: Column(
             children: [
               const SizedBox(height: 20),
+
+              // ── Avatar ──────────────────────────────────────────────────
               CircleAvatar(
                 radius: 50,
                 backgroundColor: const Color(0xFF141E2E),
-                backgroundImage: hasValidPicture
-                    ? NetworkImage(profilePicture)
-                    : null,
+                backgroundImage:
+                    hasValidPicture ? NetworkImage(profilePicture) : null,
                 child: !hasValidPicture
-                    ? const Icon(Icons.person, size: 50, color: Color(0xFF00E5A8))
+                    ? const Icon(Icons.person,
+                        size: 50, color: Color(0xFF00E5A8))
                     : null,
               ),
               const SizedBox(height: 20),
+
+              // ── User info ────────────────────────────────────────────────
               Text(
                 userName,
                 style: const TextStyle(
@@ -106,28 +113,27 @@ class ProfileScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 40),
 
-              _buildMenuItem(
+              // ── Menu items ───────────────────────────────────────────────
+              ProfileMenuItem(
                 icon: Icons.edit_outlined,
                 title: 'Edit Profil',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const EditProfileScreen()),
-                  );
-                },
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const EditProfileScreen()),
+                ),
               ),
-              _buildMenuItem(
+              ProfileMenuItem(
                 icon: Icons.lock_outline,
                 title: 'Ganti Kata Sandi',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
-                  );
-                },
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const ChangePasswordScreen()),
+                ),
               ),
               const SizedBox(height: 20),
-              _buildMenuItem(
+              ProfileMenuItem(
                 icon: Icons.logout,
                 title: 'Keluar',
                 isLogout: true,
@@ -135,41 +141,6 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMenuItem({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-    bool isLogout = false,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      decoration: BoxDecoration(
-        color: const Color(0xFF141E2E),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF1F2E46), width: 1),
-      ),
-      child: ListTile(
-        onTap: onTap,
-        leading: Icon(
-          icon,
-          color: isLogout ? Colors.redAccent : const Color(0xFF00E5A8),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: isLogout ? Colors.redAccent : Colors.white,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          color: Colors.grey,
-          size: 18,
         ),
       ),
     );

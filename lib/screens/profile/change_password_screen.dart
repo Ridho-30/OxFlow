@@ -1,7 +1,10 @@
+// lib/screens/profile/change_password_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/error_handler.dart';
+import '../../widgets/profile/profile_form_field.dart';
 import '../auth/forgot_password_screen.dart';
 import '../auth/login_screen.dart';
 
@@ -20,11 +23,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  bool _obscureOld = true;
-  bool _obscureNew = true;
-  bool _obscureConfirm = true;
-
   bool _isLoading = false;
+
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
 
   @override
   void dispose() {
@@ -34,6 +35,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     super.dispose();
   }
 
+  // ── Submit logic ───────────────────────────────────────────────────────────
+
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -41,8 +44,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Kata sandi baru tidak boleh sama dengan kata sandi lama',
-          ),
+              'Kata sandi baru tidak boleh sama dengan kata sandi lama'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -52,9 +54,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await ref
-          .read(authProvider.notifier)
-          .changePassword(
+      await ref.read(authProvider.notifier).changePassword(
             oldPassword: _oldPasswordController.text,
             newPassword: _newPasswordController.text,
             confirmPassword: _confirmPasswordController.text,
@@ -63,30 +63,25 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       if (!mounted) return;
       setState(() => _isLoading = false);
 
+      // Show success dialog then redirect to login
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) {
-          return AlertDialog(
-            backgroundColor: const Color(0xFF141E2E),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: const Text(
-              'Berhasil',
-              style: TextStyle(color: Colors.white),
-            ),
-            content: const Text(
-              'Kata sandi Anda berhasil diubah! Anda akan diarahkan ke halaman masuk untuk login kembali.',
-              style: TextStyle(color: Color(0xFF8A99AD)),
-            ),
-          );
-        },
+        builder: (_) => AlertDialog(
+          backgroundColor: const Color(0xFF141E2E),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Berhasil',
+              style: TextStyle(color: Colors.white)),
+          content: const Text(
+            'Kata sandi Anda berhasil diubah! Anda akan diarahkan ke halaman masuk untuk login kembali.',
+            style: TextStyle(color: Color(0xFF8A99AD)),
+          ),
+        ),
       );
 
       Future.delayed(const Duration(seconds: 2), () {
         if (!mounted) return;
-
         ref.read(authProvider.notifier).logout();
         Navigator.pop(context);
         Navigator.pushAndRemoveUntil(
@@ -107,6 +102,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       );
     }
   }
+
+  // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -132,18 +129,12 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildLabel('Kata Sandi Lama'),
-                TextFormField(
+                // ── Old password ─────────────────────────────────────────
+                const ProfileFieldLabel('Kata Sandi Lama'),
+                ProfilePasswordField(
                   controller: _oldPasswordController,
-                  obscureText: _obscureOld,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _buildInputDecoration(
-                    hint: 'Masukkan kata sandi lama',
-                    obscure: _obscureOld,
-                    toggleObscure: () =>
-                        setState(() => _obscureOld = !_obscureOld),
-                  ),
-                  validator: (value) => value == null || value.isEmpty
+                  hint: 'Masukkan kata sandi lama',
+                  validator: (v) => (v == null || v.isEmpty)
                       ? 'Kata sandi lama wajib diisi'
                       : null,
                 ),
@@ -151,116 +142,58 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ForgotPasswordScreen(),
-                        ),
-                      );
-                    },
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => ForgotPasswordScreen()),
+                    ),
                     child: const Text(
                       'Lupa kata sandi?',
-                      style: TextStyle(color: Color(0xFF8A99AD), fontSize: 13),
+                      style:
+                          TextStyle(color: Color(0xFF8A99AD), fontSize: 13),
                     ),
                   ),
                 ),
                 const SizedBox(height: 12),
 
-                _buildLabel('Kata Sandi Baru'),
-                TextFormField(
+                // ── New password ─────────────────────────────────────────
+                const ProfileFieldLabel('Kata Sandi Baru'),
+                ProfilePasswordField(
                   controller: _newPasswordController,
-                  obscureText: _obscureNew,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _buildInputDecoration(
-                    hint: 'Masukkan kata sandi baru',
-                    obscure: _obscureNew,
-                    toggleObscure: () =>
-                        setState(() => _obscureNew = !_obscureNew),
-                  ),
-                  validator: (value) => value == null || value.isEmpty
+                  hint: 'Masukkan kata sandi baru',
+                  validator: (v) => (v == null || v.isEmpty)
                       ? 'Kata sandi baru wajib diisi'
                       : null,
                 ),
                 const SizedBox(height: 16),
 
-                _buildLabel('Konfirmasi Kata Sandi Baru'),
-                TextFormField(
+                // ── Confirm password ─────────────────────────────────────
+                const ProfileFieldLabel('Konfirmasi Kata Sandi Baru'),
+                ProfilePasswordField(
                   controller: _confirmPasswordController,
-                  obscureText: _obscureConfirm,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _buildInputDecoration(
-                    hint: 'Konfirmasi kata sandi baru',
-                    obscure: _obscureConfirm,
-                    toggleObscure: () =>
-                        setState(() => _obscureConfirm = !_obscureConfirm),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty)
+                  hint: 'Konfirmasi kata sandi baru',
+                  validator: (v) {
+                    if (v == null || v.isEmpty) {
                       return 'Konfirmasi kata sandi wajib diisi';
-                    if (value != _newPasswordController.text)
+                    }
+                    if (v != _newPasswordController.text) {
                       return 'Kata sandi tidak cocok';
+                    }
                     return null;
                   },
                 ),
                 const SizedBox(height: 40),
 
-                _isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Color(0xFF00E5A8),
-                          ),
-                        ),
-                      )
-                    : Column(
-                        children: [
-                          SizedBox(
-                            width: double.infinity,
-                            height: 55,
-                            child: ElevatedButton(
-                              onPressed: _handleSubmit,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF00E5A8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                              ),
-                              child: const Text(
-                                'Ganti Kata Sandi',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 55,
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.pop(context),
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(
-                                  color: Color(0xFF1F2E46),
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                              ),
-                              child: const Text(
-                                'Batal',
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                // ── Action buttons ───────────────────────────────────────
+                if (_isLoading)
+                  const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xFF00E5A8)),
+                    ),
+                  )
+                else
+                  _ActionButtons(onSubmit: _handleSubmit),
               ],
             ),
           ),
@@ -268,52 +201,59 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       ),
     );
   }
+}
 
-  Widget _buildLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8, left: 4),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
+// ── Private action buttons widget ─────────────────────────────────────────────
 
-  InputDecoration _buildInputDecoration({
-    required String hint,
-    required bool obscure,
-    required VoidCallback toggleObscure,
-  }) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
-      filled: true,
-      fillColor: const Color(0xFF141E2E),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF1F2E46)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF1F2E46)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF00E5A8)),
-      ),
-      suffixIcon: IconButton(
-        icon: Icon(
-          obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-          color: Colors.grey,
-          size: 20,
+/// Extracted as a private const-capable widget so the button row does not
+/// rebuild when the parent state changes (e.g., field validation updates).
+class _ActionButtons extends StatelessWidget {
+  final VoidCallback onSubmit;
+
+  const _ActionButtons({required this.onSubmit});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          height: 55,
+          child: ElevatedButton(
+            onPressed: onSubmit,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00E5A8),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15)),
+            ),
+            child: const Text(
+              'Ganti Kata Sandi',
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
         ),
-        onPressed: toggleObscure,
-      ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          height: 55,
+          child: OutlinedButton(
+            onPressed: () => Navigator.pop(context),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Color(0xFF1F2E46)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15)),
+            ),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

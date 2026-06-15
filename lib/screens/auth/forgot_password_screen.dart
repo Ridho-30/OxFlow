@@ -2,25 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/error_handler.dart';
+import '../../widgets/auth/auth_input_field.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
   @override
-  ConsumerState<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ForgotPasswordScreen> createState() =>
+      _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
+class _ForgotPasswordScreenState
+    extends ConsumerState<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   bool _isLoading = false;
-  bool _isButtonDisabled = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _emailController.addListener(_onEmailChanged);
-  }
 
   @override
   void dispose() {
@@ -28,15 +24,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     super.dispose();
   }
 
-  void _onEmailChanged() {
-    setState(() {
-      _isButtonDisabled = _emailController.text.trim().isEmpty;
-    });
-  }
-
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isLoading = true);
 
     try {
@@ -47,35 +36,32 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       if (!mounted) return;
       setState(() => _isLoading = false);
 
-      // Show success dialog
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) {
-          return AlertDialog(
-            backgroundColor: const Color(0xFF141E2E),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: const Row(
-              children: [
-                Icon(Icons.check_circle_outline, color: Color(0xFF00E5A8)),
-                SizedBox(width: 8),
-                Text('Email Terkirim', style: TextStyle(color: Colors.white)),
-              ],
-            ),
-            content: const Text(
-              'Silakan cek email Anda untuk link reset kata sandi. Anda akan dialihkan ke halaman login dalam 3 detik.',
-              style: TextStyle(color: Color(0xFF8A99AD)),
-            ),
-          );
-        },
+        builder: (_) => AlertDialog(
+          backgroundColor: const Color(0xFF141E2E),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.check_circle_outline, color: Color(0xFF00E5A8)),
+              SizedBox(width: 8),
+              Text('Email Terkirim',
+                  style: TextStyle(color: Colors.white)),
+            ],
+          ),
+          content: const Text(
+            'Silakan cek email Anda untuk link reset kata sandi. Anda akan dialihkan ke halaman login dalam 3 detik.',
+            style: TextStyle(color: Color(0xFF8A99AD)),
+          ),
+        ),
       );
 
-      // Redirect to login after 3 seconds
       Future.delayed(const Duration(seconds: 3), () {
         if (!mounted) return;
-        Navigator.pop(context); // Pop dialog
-        Navigator.pop(context); // Pop ForgotPasswordScreen → back to Login
+        Navigator.pop(context); // close dialog
+        Navigator.pop(context); // back to login
       });
     } catch (e) {
       if (!mounted) return;
@@ -92,6 +78,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: const Color(0xFF0B1220),
       appBar: AppBar(
@@ -111,19 +98,25 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           onTap: () => Navigator.pop(context),
           child: const Text(
             'Kembali',
-            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+            style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500),
           ),
         ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 10),
+
+                // ── Header ───────────────────────────────────────────────
                 const Center(
                   child: Icon(
                     Icons.lock_reset_outlined,
@@ -156,33 +149,26 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 ),
                 const SizedBox(height: 40),
 
-                // Email Input
+                // ── Email field ──────────────────────────────────────────
                 const Text(
                   'Email',
-                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 10),
-                TextFormField(
+                AuthTextField(
                   controller: _emailController,
+                  hint: 'Masukkan email Anda',
+                  prefixIcon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: 'Masukkan email Anda',
-                    hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
-                    filled: true,
-                    fillColor: const Color(0xFF1A2332),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: BorderSide.none,
-                    ),
-                    prefixIcon: const Icon(Icons.email_outlined, color: Colors.grey),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
                       return 'Email wajib diisi';
                     }
-                    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
-                    if (!emailRegex.hasMatch(value.trim())) {
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+$')
+                        .hasMatch(v.trim())) {
                       return 'Format email tidak valid';
                     }
                     return null;
@@ -190,38 +176,48 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 ),
                 const SizedBox(height: 40),
 
-                // Submit Button
-                _isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00E5A8)),
-                        ),
-                      )
-                    : SizedBox(
+                // ── Submit button ────────────────────────────────────────
+                if (_isLoading)
+                  const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xFF00E5A8)),
+                    ),
+                  )
+                else
+                  // Use ValueListenableBuilder so the button enable/disable
+                  // state only causes this subtree to rebuild, not the Form.
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _emailController,
+                    builder: (context, value, child) {
+                      final isEmpty = value.text.trim().isEmpty;
+                      return SizedBox(
                         width: double.infinity,
                         height: 55,
                         child: ElevatedButton(
-                          onPressed: _isButtonDisabled ? null : _handleSubmit,
+                          onPressed: isEmpty ? null : _handleSubmit,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF00E5A8),
-                            disabledBackgroundColor: const Color(0xFF141E2E),
+                            disabledBackgroundColor:
+                                const Color(0xFF141E2E),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
-                            ),
+                                borderRadius: BorderRadius.circular(15)),
                           ),
                           child: Text(
                             'Kirim Link Reset',
                             style: TextStyle(
-                              color: _isButtonDisabled ? Colors.grey : Colors.black,
+                              color: isEmpty ? Colors.grey : Colors.black,
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
                           ),
                         ),
-                      ),
+                      );
+                    },
+                  ),
                 const SizedBox(height: 30),
 
-                // Back to login text link
+                // ── Back to login ────────────────────────────────────────
                 Center(
                   child: GestureDetector(
                     onTap: () => Navigator.pop(context),
@@ -231,6 +227,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         color: Color(0xFF00E5A8),
                         fontWeight: FontWeight.bold,
                         decoration: TextDecoration.underline,
+                        decorationColor: Color(0xFF00E5A8),
                       ),
                     ),
                   ),

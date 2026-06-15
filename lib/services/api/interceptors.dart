@@ -2,6 +2,7 @@
 
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../constants/api_constants.dart';
 
 class LoggingInterceptor extends Interceptor {
   @override
@@ -33,7 +34,7 @@ class AuthInterceptor extends Interceptor {
 
   // Prevent infinite refresh loops
   bool _isRefreshing = false;
-  static const String _refreshTokenPath = '/api/auth/refresh-token';
+  static const String _refreshTokenPath = '/auth/refresh-token';
 
   AuthInterceptor(this.dio);
 
@@ -42,9 +43,14 @@ class AuthInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    final token = await _storage.read(key: 'access_token');
-    if (token != null && token.isNotEmpty) {
-      options.headers['Authorization'] = 'Bearer $token';
+    // Skip injecting access token if this request explicitly opts out
+    // (e.g. the refresh-token call which uses its own Authorization header)
+    final skipAuth = options.extra['skipAuth'] == true;
+    if (!skipAuth) {
+      final token = await _storage.read(key: 'access_token');
+      if (token != null && token.isNotEmpty) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
     }
     handler.next(options);
   }
@@ -89,30 +95,44 @@ class AuthInterceptor extends Interceptor {
       final refreshToken = await _storage.read(key: 'refresh_token');
       if (refreshToken == null || refreshToken.isEmpty) return false;
 
-      final response = await dio.post(
-        _refreshTokenPath,
-        options: Options(
-          headers: {'Authorization': 'Bearer $refreshToken'},
-          // Skip this interceptor for the refresh call itself
-          extra: {'skipAuth': true},
-        ),
-      );
+      // Use a CLEAN Dio instance without interceptors to avoid recursion
+      // and to prevent the AuthInterceptor from overwriting the Authorization
+      // header with the expired access token.
+      final cleanDio = Dio(BaseOptions(
+        baseUrl: ApiConstants.baseUrl + ApiConstants.apiVersion,
+        connectTimeout: ApiConstants.connectTimeout,
+        receiveTimeout: ApiConstants.receiveTimeout,
+        headers: {
+          ...ApiConstants.defaultHeaders,
+          'Authorization': 'Bearer $refreshToken',
+        },
+        contentType: 'application/json',
+        responseType: ResponseType.json,
+      ));
 
-      final data = response.data['data'] ?? response.data;
+      final response = await cleanDio.post(_refreshTokenPath);
+
+      final data = response.data is Map<String, dynamic>
+          ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+          : <String, dynamic>{};
+
       final newAccessToken =
-          data['token'] ?? data['accessToken'] as String?;
+          (data['token'] ?? data['accessToken'] ?? data['access_token'])
+              ?.toString();
       if (newAccessToken == null || newAccessToken.isEmpty) return false;
 
       await _storage.write(key: 'access_token', value: newAccessToken);
 
       // Also update refresh token if the server rotated it
-      final newRefreshToken = data['refreshToken'] as String?;
+      final newRefreshToken =
+          (data['refreshToken'] ?? data['refresh_token'])?.toString();
       if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
         await _storage.write(key: 'refresh_token', value: newRefreshToken);
       }
 
       return true;
-    } catch (_) {
+    } catch (e) {
+      print('[AuthInterceptor] Refresh token failed: $e');
       return false;
     }
   }

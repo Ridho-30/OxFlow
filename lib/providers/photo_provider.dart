@@ -1,10 +1,12 @@
 // lib/providers/photo_provider.dart
 
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/photo_service.dart';
+import 'auth_provider.dart';
 
-final photoServiceProvider = Provider<PhotoService>((ref) => PhotoService());
+final photoServiceProvider = Provider<PhotoService>((ref) => PhotoService(ref.read(apiClientProvider)));
 
 // State untuk tracking upload progress
 class PhotoUploadState {
@@ -64,7 +66,7 @@ class PhotoUploadNotifier extends Notifier<PhotoUploadState> {
     try {
       await _photoService.deleteProfilePhoto(photoUrl: photoUrl);
     } catch (e) {
-      print('Delete photo error: $e');
+      debugPrint('[PhotoProvider] Delete photo error: $e');
     }
   }
 

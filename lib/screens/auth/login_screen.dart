@@ -1,14 +1,17 @@
+// lib/screens/auth/login_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/auth_provider.dart';
 import '../../utils/error_handler.dart';
+import '../../widgets/auth/auth_input_field.dart';
 import '../navigation/main_navigation_screen.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  LoginScreen({super.key});
+  const LoginScreen({super.key});
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -18,7 +21,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isObscured = true;
 
   @override
   void dispose() {
@@ -29,13 +31,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
-
     try {
       await ref.read(authProvider.notifier).login(
             _emailController.text.trim(),
             _passwordController.text,
           );
-
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
@@ -55,8 +55,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final isLoading = authState.isLoading;
+    // select() — only rebuild when isLoading changes, not on error/user change
+    final isLoading =
+        ref.watch(authProvider.select((s) => s.isLoading));
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B1220),
@@ -70,6 +71,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               children: [
                 const Spacer(),
 
+                // ── Logo & title ─────────────────────────────────────────
                 const Center(
                   child: Icon(
                     Icons.pie_chart,
@@ -77,9 +79,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     color: Color(0xFF00E5A8),
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
                 const Center(
                   child: Text(
                     'OxFlow',
@@ -90,58 +90,44 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 40),
 
-                // ── Email ─────────────────────────────────────────────────
+                // ── Email ────────────────────────────────────────────────
                 const Text('Email', style: TextStyle(color: Colors.white)),
                 const SizedBox(height: 10),
-                TextFormField(
+                AuthTextField(
                   controller: _emailController,
+                  hint: 'example@gmail.com',
+                  prefixIcon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration(
-                    hint: 'example@gmail.com',
-                    icon: Icons.email_outlined,
-                  ),
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Email wajib diisi';
-                    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
-                    if (!emailRegex.hasMatch(v.trim())) return 'Format email tidak valid';
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Email wajib diisi';
+                    }
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+$')
+                        .hasMatch(v.trim())) {
+                      return 'Format email tidak valid';
+                    }
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 20),
 
-                // ── Password ──────────────────────────────────────────────
-                const Text('Kata Sandi', style: TextStyle(color: Colors.white)),
+                // ── Password ─────────────────────────────────────────────
+                const Text('Kata Sandi',
+                    style: TextStyle(color: Colors.white)),
                 const SizedBox(height: 10),
-                TextFormField(
+                AuthTextField(
                   controller: _passwordController,
-                  obscureText: _isObscured,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration(
-                    hint: '••••••••',
-                    icon: Icons.lock_outline,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _isObscured
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                        color: Colors.grey,
-                      ),
-                      onPressed: () =>
-                          setState(() => _isObscured = !_isObscured),
-                    ),
-                  ),
+                  hint: '••••••••',
+                  prefixIcon: Icons.lock_outline,
+                  isPassword: true,
                   validator: (v) =>
-                      v == null || v.isEmpty ? 'Kata sandi wajib diisi' : null,
+                      (v == null || v.isEmpty) ? 'Kata sandi wajib diisi' : null,
                 ),
-
                 const SizedBox(height: 15),
 
-                // ── Forgot password link ───────────────────────────────────
+                // ── Forgot password ──────────────────────────────────────
                 Align(
                   alignment: Alignment.centerRight,
                   child: GestureDetector(
@@ -156,10 +142,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 30),
 
-                // ── Login Button ──────────────────────────────────────────
+                // ── Login button ─────────────────────────────────────────
                 SizedBox(
                   width: double.infinity,
                   height: 55,
@@ -169,8 +154,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       backgroundColor: const Color(0xFF00E5A8),
                       disabledBackgroundColor: const Color(0xFF141E2E),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
+                          borderRadius: BorderRadius.circular(15)),
                     ),
                     child: isLoading
                         ? const SizedBox(
@@ -185,16 +169,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         : const Text(
                             'Masuk',
                             style: TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16),
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                   ),
                 ),
-
                 const SizedBox(height: 30),
 
-                // ── Register link ─────────────────────────────────────────
+                // ── Register link ────────────────────────────────────────
                 Center(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -206,13 +190,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       GestureDetector(
                         onTap: () => Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => RegisterScreen()),
+                          MaterialPageRoute(
+                              builder: (_) => const RegisterScreen()),
                         ),
                         child: const Text(
                           'Daftar',
                           style: TextStyle(
-                              color: Color(0xFF00E5A8),
-                              fontWeight: FontWeight.bold),
+                            color: Color(0xFF00E5A8),
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -225,42 +211,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  InputDecoration _inputDecoration({
-    required String hint,
-    required IconData icon,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(color: Colors.grey),
-      filled: true,
-      fillColor: const Color(0xFF1A2332),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(15),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(15),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(15),
-        borderSide: const BorderSide(color: Color(0xFF00E5A8)),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(15),
-        borderSide: const BorderSide(color: Colors.redAccent),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(15),
-        borderSide: const BorderSide(color: Colors.redAccent),
-      ),
-      prefixIcon: Icon(icon, color: Colors.grey),
-      suffixIcon: suffixIcon,
-      errorStyle: const TextStyle(color: Colors.redAccent),
     );
   }
 }

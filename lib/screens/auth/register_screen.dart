@@ -1,12 +1,15 @@
+// lib/screens/auth/register_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/auth_provider.dart';
 import '../../utils/error_handler.dart';
+import '../../widgets/auth/auth_input_field.dart';
 import '../navigation/main_navigation_screen.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
-  RegisterScreen({super.key});
+  const RegisterScreen({super.key});
 
   @override
   ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
@@ -19,9 +22,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  bool _obscurePassword = true;
-  bool _obscureConfirm = true;
-
   @override
   void dispose() {
     _nameController.dispose();
@@ -33,7 +33,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
-
     try {
       await ref.read(authProvider.notifier).register(
             name: _nameController.text.trim(),
@@ -41,7 +40,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             password: _passwordController.text,
             confirmPassword: _confirmPasswordController.text,
           );
-
       if (!mounted) return;
       Navigator.pushAndRemoveUntil(
         context,
@@ -62,7 +60,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = ref.watch(authProvider).isLoading;
+    // select() — only rebuild this screen when isLoading changes
+    final isLoading =
+        ref.watch(authProvider.select((s) => s.isLoading));
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B1220),
@@ -84,6 +84,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               children: [
                 const SizedBox(height: 20),
 
+                // ── Header ───────────────────────────────────────────────
                 const Center(
                   child: Icon(
                     Icons.person_add_alt_1,
@@ -91,9 +92,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     color: Color(0xFF00E5A8),
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
                 const Center(
                   child: Text(
                     'Daftar',
@@ -104,114 +103,82 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 40),
 
-                // ── Name ──────────────────────────────────────────────────
+                // ── Full name ────────────────────────────────────────────
                 const Text('Nama Lengkap',
                     style: TextStyle(color: Colors.white)),
                 const SizedBox(height: 10),
-                TextFormField(
+                AuthTextField(
                   controller: _nameController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration(
-                    'Masukkan nama lengkap',
-                    Icons.person_outline,
-                  ),
-                  validator: (v) => v == null || v.trim().isEmpty
+                  hint: 'Masukkan nama lengkap',
+                  prefixIcon: Icons.person_outline,
+                  validator: (v) => (v == null || v.trim().isEmpty)
                       ? 'Nama wajib diisi'
                       : null,
                 ),
-
                 const SizedBox(height: 20),
 
-                // ── Email ─────────────────────────────────────────────────
+                // ── Email ────────────────────────────────────────────────
                 const Text('Email', style: TextStyle(color: Colors.white)),
                 const SizedBox(height: 10),
-                TextFormField(
+                AuthTextField(
                   controller: _emailController,
+                  hint: 'example@gmail.com',
+                  prefixIcon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration(
-                    'example@gmail.com',
-                    Icons.email_outlined,
-                  ),
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Email wajib diisi';
-                    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
-                    if (!emailRegex.hasMatch(v.trim()))
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Email wajib diisi';
+                    }
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+$')
+                        .hasMatch(v.trim())) {
                       return 'Format email tidak valid';
+                    }
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 20),
 
-                // ── Password ──────────────────────────────────────────────
-                const Text('Kata Sandi', style: TextStyle(color: Colors.white)),
+                // ── Password ─────────────────────────────────────────────
+                const Text('Kata Sandi',
+                    style: TextStyle(color: Colors.white)),
                 const SizedBox(height: 10),
-                TextFormField(
+                AuthTextField(
                   controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration(
-                    '••••••••',
-                    Icons.lock_outline,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                        color: Colors.grey,
-                      ),
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
-                    ),
-                  ),
+                  hint: '••••••••',
+                  prefixIcon: Icons.lock_outline,
+                  isPassword: true,
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Kata sandi wajib diisi';
-                    if (v.length < 8)
-                      return 'Kata sandi minimal 8 karakter';
+                    if (v.length < 8) return 'Kata sandi minimal 8 karakter';
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 20),
 
-                // ── Confirm Password ──────────────────────────────────────
+                // ── Confirm password ─────────────────────────────────────
                 const Text('Konfirmasi Kata Sandi',
                     style: TextStyle(color: Colors.white)),
                 const SizedBox(height: 10),
-                TextFormField(
+                AuthTextField(
                   controller: _confirmPasswordController,
-                  obscureText: _obscureConfirm,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration(
-                    '••••••••',
-                    Icons.lock_outline,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureConfirm
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                        color: Colors.grey,
-                      ),
-                      onPressed: () =>
-                          setState(() => _obscureConfirm = !_obscureConfirm),
-                    ),
-                  ),
+                  hint: '••••••••',
+                  prefixIcon: Icons.lock_outline,
+                  isPassword: true,
                   validator: (v) {
-                    if (v == null || v.isEmpty)
+                    if (v == null || v.isEmpty) {
                       return 'Konfirmasi kata sandi wajib diisi';
-                    if (v != _passwordController.text)
+                    }
+                    if (v != _passwordController.text) {
                       return 'Kata sandi tidak cocok';
+                    }
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 35),
 
-                // ── Register Button ───────────────────────────────────────
+                // ── Register button ──────────────────────────────────────
                 SizedBox(
                   width: double.infinity,
                   height: 55,
@@ -221,8 +188,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       backgroundColor: const Color(0xFF00E5A8),
                       disabledBackgroundColor: const Color(0xFF141E2E),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
+                          borderRadius: BorderRadius.circular(15)),
                     ),
                     child: isLoading
                         ? const SizedBox(
@@ -237,15 +203,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         : const Text(
                             'Daftar',
                             style: TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16),
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                   ),
                 ),
-
                 const SizedBox(height: 30),
 
+                // ── Login link ───────────────────────────────────────────
                 Center(
                   child: GestureDetector(
                     onTap: () => Navigator.pop(context),
@@ -255,49 +222,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 30),
               ],
             ),
           ),
         ),
       ),
-    );
-  }
-
-  InputDecoration _inputDecoration(
-    String hint,
-    IconData icon, {
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(color: Colors.grey),
-      filled: true,
-      fillColor: const Color(0xFF1A2332),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(15),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(15),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(15),
-        borderSide: const BorderSide(color: Color(0xFF00E5A8)),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(15),
-        borderSide: const BorderSide(color: Colors.redAccent),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(15),
-        borderSide: const BorderSide(color: Colors.redAccent),
-      ),
-      prefixIcon: Icon(icon, color: Colors.grey),
-      suffixIcon: suffixIcon,
-      errorStyle: const TextStyle(color: Colors.redAccent),
     );
   }
 }
