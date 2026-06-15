@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../providers/laporan_provider.dart';
+import '../../../providers/dashboard_provider.dart';
+import '../edit_transaction_screen.dart';
 import '../utils/laporan_utils.dart';
 
 /// Shows a draggable modal bottom sheet with full transaction detail.
@@ -32,9 +34,8 @@ Future<void> showTransactionDetailSheet(
       minChildSize: 0.4,
       maxChildSize: 0.85,
       expand: false,
-      builder: (_, scrollController) => _TransactionDetailContent(
-        scrollController: scrollController,
-      ),
+      builder: (_, scrollController) =>
+          _TransactionDetailContent(scrollController: scrollController),
     ),
   ).then((_) => notifier.clearActiveDetail());
 
@@ -69,8 +70,7 @@ class _TransactionDetailContent extends ConsumerWidget {
       );
     }
 
-    final bool isIncome =
-        isIncomeCategory(tx.category?.nameCategory ?? '');
+    final bool isIncome = isIncomeCategory(tx.category?.nameCategory ?? '');
     final amountStr = isIncome
         ? '+${formatCurrency(tx.total)}'
         : '-${formatCurrency(tx.total)}';
@@ -96,15 +96,106 @@ class _TransactionDetailContent extends ConsumerWidget {
 
           // Header
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Detail Transaksi',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              const Expanded(
+                child: Text(
+                  'Detail Transaksi',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit, color: Color(0xFF00E5A8)),
+                onPressed: () {
+                  Navigator.pop(context); // close sheet
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EditTransactionScreen(transaction: tx),
+                    ),
+                  );
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.redAccent),
+                onPressed: () async {
+                  final bool? confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (dialogCtx) => AlertDialog(
+                      backgroundColor: const Color(0xFF141E2E),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      title: const Text(
+                        'Hapus Transaksi?',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      content: const Text(
+                        'Transaksi ini akan dihapus. Tindakan ini tidak dapat dibatalkan.',
+                        style: TextStyle(color: Color(0xFF8A99AD)),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogCtx, false),
+                          child: const Text(
+                            'Batal',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(dialogCtx, true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent,
+                          ),
+                          child: const Text(
+                            'Hapus',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirm == true && context.mounted) {
+                    try {
+                      await ref
+                          .read(laporanProvider.notifier)
+                          .deleteTransaction(tx.id);
+                      if (context.mounted) {
+                        Navigator.pop(context); // close sheet
+                        ref.invalidate(dashboardProvider);
+                        ref.invalidate(laporanProvider);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Transaksi berhasil dihapus',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            backgroundColor: Color(0xFF0C2B29),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Gagal menghapus: $e',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            backgroundColor: Colors.redAccent,
+                          ),
+                        );
+                      }
+                    }
+                  }
+                },
               ),
               IconButton(
                 icon: const Icon(Icons.close, color: Colors.grey),
@@ -125,9 +216,7 @@ class _TransactionDetailContent extends ConsumerWidget {
           _DetailRow(
             'Total Nominal',
             amountStr,
-            valueColor: isIncome
-                ? const Color(0xFF00E5A8)
-                : Colors.redAccent,
+            valueColor: isIncome ? const Color(0xFF00E5A8) : Colors.redAccent,
           ),
 
           // Receipt photo
@@ -135,8 +224,7 @@ class _TransactionDetailContent extends ConsumerWidget {
             const SizedBox(height: 16),
             const Text(
               'Foto Struk',
-              style: TextStyle(
-                  color: Color(0xFF8A99AD), fontSize: 14),
+              style: TextStyle(color: Color(0xFF8A99AD), fontSize: 14),
             ),
             const SizedBox(height: 8),
             ClipRRect(
@@ -153,13 +241,11 @@ class _TransactionDetailContent extends ConsumerWidget {
                   child: const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.broken_image,
-                          color: Colors.grey, size: 36),
+                      Icon(Icons.broken_image, color: Colors.grey, size: 36),
                       SizedBox(height: 8),
                       Text(
                         'Gambar gagal dimuat',
-                        style:
-                            TextStyle(color: Colors.grey, fontSize: 12),
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
                       ),
                     ],
                   ),
@@ -213,9 +299,10 @@ class _DetailRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: const TextStyle(
-                  color: Color(0xFF8A99AD), fontSize: 14)),
+          Text(
+            label,
+            style: const TextStyle(color: Color(0xFF8A99AD), fontSize: 14),
+          ),
           Text(
             value,
             style: TextStyle(
@@ -265,7 +352,9 @@ class _DetailItemCard extends StatelessWidget {
                 Text(
                   '${detail.quantity} x ${formatCurrency(detail.price as double)}',
                   style: const TextStyle(
-                      color: Color(0xFF8A99AD), fontSize: 12),
+                    color: Color(0xFF8A99AD),
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),

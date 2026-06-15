@@ -285,6 +285,26 @@ class LaporanNotifier extends Notifier<LaporanState> {
     }
   }
 
+  /// Update a transaction
+  Future<void> updateTransaction(String id, Map<String, dynamic> data) async {
+    try {
+      await _service.updateTransaction(id, data);
+      // Data will be refreshed by caller via ref.invalidate
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Delete a transaction
+  Future<void> deleteTransaction(String id) async {
+    try {
+      await _service.deleteTransaction(id);
+      // Data will be refreshed by caller via ref.invalidate
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   /// Clear active transaction detail
   void clearActiveDetail() {
     state = state.copyWith(clearActiveDetail: true);

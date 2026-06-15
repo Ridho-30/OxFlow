@@ -34,7 +34,7 @@ class LaporanBulananTab extends ConsumerWidget {
         '${kMonthNames[state.selectedMonth - 1]} ${state.selectedYear}';
 
     final db = state.monthlyDashboard;
-    final categories = state.monthlyCategories;
+    final categories = state.monthlyCategories.where((cat) => cat.total > 0).toList();
 
     final double expense = db?.totalExpense ?? 0;
 
@@ -70,7 +70,9 @@ class LaporanBulananTab extends ConsumerWidget {
             }
             ref.read(laporanProvider.notifier).changeMonthYear(m, y);
           },
-          onTapLabel: onDownloadPdf,
+          onTapLabel: () {
+            _showMonthYearPicker(context, ref, state.selectedMonth, state.selectedYear);
+          },
         ),
         const SizedBox(height: 16),
 
@@ -188,6 +190,80 @@ class LaporanBulananTab extends ConsumerWidget {
       ],
     );
   }
+
+  void _showMonthYearPicker(BuildContext context, WidgetRef ref, int initialMonth, int initialYear) {
+    int selectedMonth = initialMonth;
+    int selectedYear = initialYear;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF141E2E),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text('Pilih Bulan & Tahun', style: TextStyle(color: Colors.white)),
+              content: Row(
+                children: [
+                  Expanded(
+                    child: DropdownButton<int>(
+                      value: selectedMonth,
+                      dropdownColor: const Color(0xFF1F2E46),
+                      isExpanded: true,
+                      style: const TextStyle(color: Colors.white),
+                      items: List.generate(12, (index) {
+                        return DropdownMenuItem(
+                          value: index + 1,
+                          child: Text(kMonthNames[index]),
+                        );
+                      }),
+                      onChanged: (val) {
+                        if (val != null) setState(() => selectedMonth = val);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: DropdownButton<int>(
+                      value: selectedYear,
+                      dropdownColor: const Color(0xFF1F2E46),
+                      isExpanded: true,
+                      style: const TextStyle(color: Colors.white),
+                      items: List.generate(10, (index) {
+                        final y = DateTime.now().year - 5 + index;
+                        return DropdownMenuItem(
+                          value: y,
+                          child: Text(y.toString()),
+                        );
+                      }),
+                      onChanged: (val) {
+                        if (val != null) setState(() => selectedYear = val);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    ref.read(laporanProvider.notifier).changeMonthYear(selectedMonth, selectedYear);
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00E5A8)),
+                  child: const Text('Pilih', style: TextStyle(color: Colors.black)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 }
 
 // ── Month navigator ───────────────────────────────────────────────────────────
@@ -208,17 +284,14 @@ class _MonthNavigator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        IconButton(
-          icon: const Icon(Icons.chevron_left, color: Color(0xFF00E5A8)),
-          onPressed: onPrev,
-        ),
         InkWell(
           onTap: onTapLabel,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   label,
@@ -229,15 +302,10 @@ class _MonthNavigator extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 4),
-                const Icon(Icons.arrow_drop_down,
-                    color: Color(0xFF00E5A8)),
+                const Icon(Icons.arrow_drop_down, color: Color(0xFF00E5A8)),
               ],
             ),
           ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.chevron_right, color: Color(0xFF00E5A8)),
-          onPressed: onNext,
         ),
       ],
     );
@@ -323,7 +391,7 @@ class _DownloadPdfButton extends StatelessWidget {
         label: Text(
           isLoading
               ? 'Sedang Mengekspor...'
-              : 'Pilih Bulan dan Tahun Laporan',
+              : 'Unduh Laporan PDF',
           style: const TextStyle(
               color: Colors.black, fontWeight: FontWeight.bold),
         ),

@@ -82,6 +82,41 @@ class LaporanService {
     }
   }
 
+  /// PUT /api/transactions/{id} — Update an existing transaction
+  Future<TransactionModel> updateTransaction(String transactionId, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiClient.put(
+        ApiEndpoints.transactionDetail(transactionId),
+        data: data,
+      );
+
+      if (kDebugMode) {
+        debugPrint('[LaporanService] Update transaction response: $response');
+      }
+
+      final resData = response['data'] ?? response;
+      return TransactionModel.fromJsonWithCategories(resData as Map<String, dynamic>, {});
+    } catch (e) {
+      debugPrint('[LaporanService] updateTransaction error: $e');
+      rethrow;
+    }
+  }
+
+  /// DELETE /api/transactions/{id} — Soft delete a transaction
+  Future<void> deleteTransaction(String transactionId) async {
+    try {
+      await _apiClient.delete(
+        ApiEndpoints.transactionDetail(transactionId),
+      );
+      if (kDebugMode) {
+        debugPrint('[LaporanService] Deleted transaction $transactionId');
+      }
+    } catch (e) {
+      debugPrint('[LaporanService] deleteTransaction error: $e');
+      rethrow;
+    }
+  }
+
   /// GET /api/analytics/dashboard — Fetch analytics summary (income, expense, balance, avg daily)
   Future<AnalyticsDashboardModel> getAnalyticsDashboard({
     int? month,

@@ -13,6 +13,7 @@ class ApiEndpoints {
   // Users
   static const String profile = '/users/profile';
   static const String updateProfile = '/users/profile';
+  static const String deleteAccount = '/users/account';
 
   // Categories
   static const String categories = '/categories';

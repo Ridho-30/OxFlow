@@ -138,10 +138,41 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
+  Future<void> deleteAccount() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _authService.deleteAccount();
+      // On success, state becomes unauthenticated
+      state = const AuthState(isCheckingAuth: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
+    }
+  }
+
   Future<void> forgotPassword(String email) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       await _authService.forgotPassword(email);
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
+    }
+  }
+
+  Future<void> resetPassword({
+    required String token,
+    required String password,
+    required String confirmPassword,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _authService.resetPassword(
+        token: token,
+        password: password,
+        confirmPassword: confirmPassword,
+      );
       state = state.copyWith(isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());

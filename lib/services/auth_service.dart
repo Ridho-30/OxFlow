@@ -137,6 +137,22 @@ class AuthService {
     return updatedResponse;
   }
 
+  // ── Delete Account ───────────────────────────────────────────────────────────
+  Future<void> deleteAccount() async {
+    try {
+      await _apiClient.delete(ApiEndpoints.deleteAccount);
+    } catch (e) {
+      // Re-throw so caller can show error
+      rethrow;
+    } finally {
+      // Whether success or failure (if partial), it's safer to clear storage on successful delete.
+      // Wait, if it fails, maybe don't clear storage? The requirement says "Jika response sukses (200): hapus semua data sesi lokal"
+      // So let's only clear on success.
+    }
+    // Only clears if delete succeeds
+    await _clearStorage();
+  }
+
   // ── Logout ─────────────────────────────────────────────────────────────────
   Future<void> logout() async {
     try {

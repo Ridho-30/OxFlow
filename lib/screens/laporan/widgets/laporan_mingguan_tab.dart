@@ -174,7 +174,7 @@ class _LaporanMingguanTabState
 
 // ── Week navigator ────────────────────────────────────────────────────────────
 
-class _WeekNavigator extends StatelessWidget {
+class _WeekNavigator extends ConsumerWidget {
   final String label;
   final VoidCallback onPrev;
   final VoidCallback onNext;
@@ -185,29 +185,62 @@ class _WeekNavigator extends StatelessWidget {
     required this.onNext,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        IconButton(
-          icon: const Icon(Icons.chevron_left, color: Color(0xFF00E5A8)),
-          onPressed: onPrev,
-        ),
-        Expanded(
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+  Future<void> _selectDate(BuildContext context, WidgetRef ref) async {
+    final state = ref.read(laporanProvider);
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: state.currentDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFF00E5A8), // header background color
+              onPrimary: Colors.black, // header text color
+              surface: Color(0xFF141E2E), // background color
+              onSurface: Colors.white, // text color
             ),
           ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.chevron_right, color: Color(0xFF00E5A8)),
-          onPressed: onNext,
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      ref.read(laporanProvider.notifier).changeDate(picked);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        TextButton(
+          onPressed: () => _selectDate(context, ref),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 4),
+              const Icon(Icons.arrow_drop_down, color: Color(0xFF00E5A8)),
+            ],
+          ),
         ),
       ],
     );
