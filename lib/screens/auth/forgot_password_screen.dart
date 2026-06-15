@@ -12,8 +12,7 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
       _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState
-    extends ConsumerState<ForgotPasswordScreen> {
+class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   bool _isLoading = false;
@@ -42,17 +41,17 @@ class _ForgotPasswordScreenState
         builder: (_) => AlertDialog(
           backgroundColor: const Color(0xFF141E2E),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16)),
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: const Row(
             children: [
               Icon(Icons.check_circle_outline, color: Color(0xFF00E5A8)),
               SizedBox(width: 8),
-              Text('Email Terkirim',
-                  style: TextStyle(color: Colors.white)),
+              Text('Email Terkirim', style: TextStyle(color: Colors.white)),
             ],
           ),
           content: const Text(
-            'Silakan cek email Anda untuk link reset kata sandi. Anda akan dialihkan ke halaman login dalam 3 detik.',
+            'Silakan cek email Anda untuk link reset kata sandi.',
             style: TextStyle(color: Color(0xFF8A99AD)),
           ),
         ),
@@ -78,7 +77,6 @@ class _ForgotPasswordScreenState
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: const Color(0xFF0B1220),
       appBar: AppBar(
@@ -99,16 +97,16 @@ class _ForgotPasswordScreenState
           child: const Text(
             'Kembali',
             style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w500),
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
           child: Form(
             key: _formKey,
             child: Column(
@@ -153,9 +151,10 @@ class _ForgotPasswordScreenState
                 const Text(
                   'Email',
                   style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500),
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 AuthTextField(
@@ -167,8 +166,7 @@ class _ForgotPasswordScreenState
                     if (v == null || v.trim().isEmpty) {
                       return 'Email wajib diisi';
                     }
-                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+$')
-                        .hasMatch(v.trim())) {
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(v.trim())) {
                       return 'Format email tidak valid';
                     }
                     return null;
@@ -181,7 +179,8 @@ class _ForgotPasswordScreenState
                   const Center(
                     child: CircularProgressIndicator(
                       valueColor: AlwaysStoppedAnimation<Color>(
-                          Color(0xFF00E5A8)),
+                        Color(0xFF00E5A8),
+                      ),
                     ),
                   )
                 else
@@ -198,10 +197,10 @@ class _ForgotPasswordScreenState
                           onPressed: isEmpty ? null : _handleSubmit,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF00E5A8),
-                            disabledBackgroundColor:
-                                const Color(0xFF141E2E),
+                            disabledBackgroundColor: const Color(0xFF141E2E),
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(15)),
+                              borderRadius: BorderRadius.circular(15),
+                            ),
                           ),
                           child: Text(
                             'Kirim Link Reset',
@@ -216,22 +215,6 @@ class _ForgotPasswordScreenState
                     },
                   ),
                 const SizedBox(height: 30),
-
-                // ── Back to login ────────────────────────────────────────
-                Center(
-                  child: GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Text(
-                      'Kembali ke halaman login',
-                      style: TextStyle(
-                        color: Color(0xFF00E5A8),
-                        fontWeight: FontWeight.bold,
-                        decoration: TextDecoration.underline,
-                        decorationColor: Color(0xFF00E5A8),
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),

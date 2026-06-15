@@ -1,19 +1,23 @@
 // lib/screens/auth/reset_password_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/auth_provider.dart';
+import '../../utils/error_handler.dart';
 import '../../widgets/auth/auth_input_field.dart';
 import '../../widgets/auth/password_requirement_item.dart';
 import '../../widgets/profile/profile_form_field.dart';
 import 'login_screen.dart';
 
-class ResetPasswordScreen extends StatefulWidget {
-  const ResetPasswordScreen({super.key});
+class ResetPasswordScreen extends ConsumerStatefulWidget {
+  final String? token;
+  const ResetPasswordScreen({super.key, this.token});
 
   @override
-  State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
+  ConsumerState<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
 }
 
-class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
+class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -23,8 +27,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   bool _hasUppercase = false;
   bool _hasNumber = false;
   bool _hasSymbol = false;
-
-  bool _isLoading = false;
 
   bool get _allRequirementsMet =>
       _hasMinLength && _hasUppercase && _hasNumber && _hasSymbol;
@@ -54,7 +56,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     });
   }
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
     if (!_allRequirementsMet) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -67,12 +69,25 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    final token = widget.token;
+    if (token == null || token.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Token reset password tidak valid atau kedaluwarsa.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
 
-    // Simulate API request
-    Future.delayed(const Duration(seconds: 2), () {
+    try {
+      await ref.read(authProvider.notifier).resetPassword(
+            token: token,
+            password: _newPasswordController.text,
+            confirmPassword: _confirmPasswordController.text,
+          );
+          
       if (!mounted) return;
-      setState(() => _isLoading = false);
 
       showDialog(
         context: context,
@@ -99,11 +114,22 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           (route) => false,
         );
       });
-    });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(ErrorHandler.getErrorMessage(e)),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = ref.watch(authProvider.select((s) => s.isLoading));
+
     return Scaffold(
       backgroundColor: const Color(0xFF0B1220),
       appBar: AppBar(
@@ -208,7 +234,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 const SizedBox(height: 40),
 
                 // ── Submit / loading ─────────────────────────────────────
-                if (_isLoading)
+                if (isLoading)
                   const Center(
                     child: CircularProgressIndicator(
                       valueColor: AlwaysStoppedAnimation<Color>(

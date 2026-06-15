@@ -51,6 +51,7 @@ dependencies:
   permission_handler: ^11.3.1
   open_filex: ^4.7.0
   google_mlkit_text_recognition: ^0.13.0
+  app_links: ^7.0.0
 
 dev_dependencies:
   flutter_test:

@@ -7,10 +7,12 @@ import '../services/api/api_endpoints.dart';
 import '../providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
 import '../providers/laporan_provider.dart';
+import '../models/transaction/transaction_model.dart';
 import '../services/ocr/receipt_parser.dart';
 
 class TransactionFormFields extends ConsumerStatefulWidget {
   final ParsedReceipt? initialData;
+  final TransactionModel? existingTransaction;
   final String? imagePath;
   final VoidCallback onSuccess;
   final VoidCallback onCancel;
@@ -18,6 +20,7 @@ class TransactionFormFields extends ConsumerStatefulWidget {
   const TransactionFormFields({
     super.key,
     this.initialData,
+    this.existingTransaction,
     this.imagePath,
     required this.onSuccess,
     required this.onCancel,
@@ -44,28 +47,48 @@ class _TransactionFormFieldsState extends ConsumerState<TransactionFormFields> {
   void initState() {
     super.initState();
 
-    // Initialize form values from initialData (OCR parsed) or empty (Manual)
+    final tx = widget.existingTransaction;
+    final initial = widget.initialData;
+
+    // Initialize form values from existingTransaction (Edit), initialData (OCR), or empty (Manual)
     _storeNameController = TextEditingController(
-      text: widget.initialData?.storeName ?? '',
+      text: tx?.title ?? initial?.storeName ?? '',
     );
+
+    // Hitung pajak dari items tax? 
+    // Wait, existingTransaction details might include tax. 
+    // In LaporanTransactionDetailSheet, tax is not separated from details, but saved as an item.
+    // Let's filter out "Pajak / Fee Tambahan" if it exists in details.
+    
+    List<Map<String, dynamic>> itemsList = [];
+    double initialTax = 0.0;
+
+    if (tx != null) {
+      for (var d in tx.details) {
+        if (d.nameItems.toLowerCase().contains('pajak') || d.nameItems.toLowerCase().contains('fee tambahan')) {
+          initialTax += d.subtotal;
+        } else {
+          itemsList.add({
+            'name': d.nameItems,
+            'qty': d.quantity,
+            'price': d.price,
+          });
+        }
+      }
+    } else if (initial != null) {
+      initialTax = initial.tax > 0 ? initial.tax : 0.0;
+      itemsList = initial.items.map((item) => <String, dynamic>{
+        'name': item.name,
+        'qty': item.quantity,
+        'price': item.unitPrice,
+      }).toList();
+    }
 
     _pajakController = TextEditingController(
-      text: widget.initialData != null && widget.initialData!.tax > 0
-          ? widget.initialData!.tax.toInt().toString()
-          : '0',
+      text: initialTax > 0 ? initialTax.toInt().toString() : '0',
     );
 
-    _items = widget.initialData != null
-        ? widget.initialData!.items
-              .map(
-                (item) => <String, dynamic>{
-                  'name': item.name,
-                  'qty': item.quantity,
-                  'price': item.unitPrice,
-                },
-              )
-              .toList()
-        : [];
+    _items = itemsList;
 
     _fetchCategories();
   }
@@ -103,7 +126,12 @@ class _TransactionFormFieldsState extends ConsumerState<TransactionFormFields> {
 
           if (_categories.isNotEmpty) {
             // Smart auto-select food or grocery categories for OCR validation
-            if (widget.initialData != null) {
+            if (widget.existingTransaction != null) {
+              _selectedCategory = _categories.firstWhere(
+                (c) => c.id == widget.existingTransaction!.category?.id,
+                orElse: () => _categories.first,
+              );
+            } else if (widget.initialData != null) {
               _selectedCategory = _categories.firstWhere(
                 (c) =>
                     c.nameCategory.toLowerCase().contains('makan') ||
@@ -331,7 +359,7 @@ class _TransactionFormFieldsState extends ConsumerState<TransactionFormFields> {
                     if (trimmedName.isEmpty) {
                       ScaffoldMessenger.of(statefulCtx).showSnackBar(
                         const SnackBar(
-                          content: Text('Nama barang tidak boleh kosong!'),
+                          content: Text('Nama barang tidak boleh kosong!', style: TextStyle(color: Colors.white)),
                           backgroundColor: Colors.redAccent,
                           duration: Duration(seconds: 2),
                         ),
@@ -434,7 +462,7 @@ class _TransactionFormFieldsState extends ConsumerState<TransactionFormFields> {
     if (_items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Tambahkan minimal 1 barang!'),
+          content: Text('Tambahkan minimal 1 barang!', style: TextStyle(color: Colors.white)),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -444,7 +472,7 @@ class _TransactionFormFieldsState extends ConsumerState<TransactionFormFields> {
     if (_selectedCategory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Pilih kategori terlebih dahulu!'),
+          content: Text('Pilih kategori terlebih dahulu!', style: TextStyle(color: Colors.white)),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -457,6 +485,9 @@ class _TransactionFormFieldsState extends ConsumerState<TransactionFormFields> {
 
     try {
       final now = DateTime.now();
+      // Keep existing transaction date if editing
+      final txDate = widget.existingTransaction?.date.toIso8601String().split('T')[0] ?? 
+                     now.toIso8601String().split('T')[0];
 
       final List<Map<String, dynamic>> detailsPayload = _items
           .map(
@@ -481,14 +512,20 @@ class _TransactionFormFieldsState extends ConsumerState<TransactionFormFields> {
       final Map<String, dynamic> transactionPayload = {
         'category_id': _selectedCategory!.id,
         'total': _total,
-        'date': now.toIso8601String().split('T')[0],
+        'date': txDate,
         'nama_toko': _storeNameController.text.trim(),
         'details': detailsPayload,
       };
 
-      await ref
-          .read(apiClientProvider)
-          .post(ApiEndpoints.transactions, data: transactionPayload);
+      if (widget.existingTransaction != null) {
+        await ref
+            .read(laporanProvider.notifier)
+            .updateTransaction(widget.existingTransaction!.id, transactionPayload);
+      } else {
+        await ref
+            .read(apiClientProvider)
+            .post(ApiEndpoints.transactions, data: transactionPayload);
+      }
 
       if (!mounted) return;
 
@@ -497,9 +534,14 @@ class _TransactionFormFieldsState extends ConsumerState<TransactionFormFields> {
       ref.invalidate(laporanProvider);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Transaksi berhasil disimpan!'),
-          backgroundColor: Color(0xFF0C2B29),
+        SnackBar(
+          content: Text(
+            widget.existingTransaction != null 
+                ? 'Transaksi berhasil diperbarui!' 
+                : 'Transaksi berhasil disimpan!',
+            style: const TextStyle(color: Colors.white),
+          ),
+          backgroundColor: const Color(0xFF0C2B29),
         ),
       );
 
@@ -508,7 +550,7 @@ class _TransactionFormFieldsState extends ConsumerState<TransactionFormFields> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal menyimpan transaksi: $e'),
+          content: Text('Gagal menyimpan transaksi: $e', style: const TextStyle(color: Colors.white)),
           backgroundColor: Colors.redAccent,
         ),
       );

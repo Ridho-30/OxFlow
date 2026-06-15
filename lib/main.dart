@@ -6,6 +6,7 @@ import 'providers/auth_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/navigation/main_navigation_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'services/deep_link_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +18,8 @@ void main() async {
     publishableKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
   );
 
+  DeepLinkService.instance.init();
+
   runApp(const ProviderScope(child: OxFlowApp()));
 }
 
@@ -26,6 +29,7 @@ class OxFlowApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: DeepLinkService.instance.navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'OxFlow',
       theme: ThemeData(

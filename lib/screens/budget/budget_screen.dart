@@ -110,34 +110,24 @@ class _BudgetContent extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Header ───────────────────────────────────────────────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Anggaran',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      monthLabel,
-                      style: const TextStyle(
-                        color: Color(0xFF8A99AD),
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
+                const Text(
+                  'Anggaran',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                _BudgetMenuButton(
-                  onEdit: () => onOpenDialog(budget),
-                  onRefresh: onRefresh,
+                const SizedBox(height: 4),
+                Text(
+                  monthLabel,
+                  style: const TextStyle(
+                    color: Color(0xFF8A99AD),
+                    fontSize: 14,
+                  ),
                 ),
               ],
             ),
@@ -173,52 +163,3 @@ class _BudgetContent extends StatelessWidget {
   }
 }
 
-// ── Private menu button widget ────────────────────────────────────────────────
-
-class _BudgetMenuButton extends StatelessWidget {
-  final VoidCallback onEdit;
-  final VoidCallback onRefresh;
-
-  const _BudgetMenuButton({
-    required this.onEdit,
-    required this.onRefresh,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return PopupMenuButton<String>(
-      icon: const Icon(Icons.more_vert, color: Color(0xFF8A99AD), size: 28),
-      color: const Color(0xFF141E2E),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      onSelected: (value) {
-        if (value == 'atur') {
-          onEdit();
-        } else if (value == 'refresh') {
-          onRefresh();
-        }
-      },
-      itemBuilder: (_) => const [
-        PopupMenuItem(
-          value: 'atur',
-          child: Row(
-            children: [
-              Icon(Icons.edit_outlined, color: Color(0xFF00E5A8), size: 18),
-              SizedBox(width: 10),
-              Text('Atur Anggaran', style: TextStyle(color: Colors.white)),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: 'refresh',
-          child: Row(
-            children: [
-              Icon(Icons.refresh, color: Color(0xFF8A99AD), size: 18),
-              SizedBox(width: 10),
-              Text('Refresh', style: TextStyle(color: Colors.white)),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
