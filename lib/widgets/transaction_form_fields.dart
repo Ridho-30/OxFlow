@@ -1,5 +1,8 @@
 // lib/widgets/transaction_form_fields.dart
 
+import 'dart:io';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/transaction/category_model.dart';
@@ -327,14 +330,9 @@ class _TransactionFormFieldsState extends ConsumerState<TransactionFormFields> {
               ),
               actions: [
                 TextButton(
-                  onPressed: isSaving ? null : () async {
-                    setDialogState(() => isSaving = true);
-                    // Lepas focus dari TextField agar keyboard turun dan FocusNode detach
-                    FocusScope.of(statefulCtx).unfocus();
-                    
-                    // Tunggu sesaat agar proses unfocus selesai sebelum dialog di-dispose
-                    await Future.delayed(Duration.zero);
-                    if (!statefulCtx.mounted) return;
+                  onPressed: isSaving ? null : () {
+                    // Hide keyboard safely without context dependency
+                    FocusManager.instance.primaryFocus?.unfocus();
                     
                     Navigator.pop(dialogCtx);
                   },
@@ -346,27 +344,22 @@ class _TransactionFormFieldsState extends ConsumerState<TransactionFormFields> {
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: isSaving ? null : () async {
-                    setDialogState(() => isSaving = true);
-                    // Lepas focus dari TextField agar keyboard turun dan FocusNode detach
-                    FocusScope.of(statefulCtx).unfocus();
-                    
-                    // Tunggu sesaat agar proses unfocus dan detach keyboard selesai
-                    await Future.delayed(Duration.zero);
-                    if (!statefulCtx.mounted) return;
-
+                  onPressed: isSaving ? null : () {
                     final trimmedName = nameCtrl.text.trim();
                     if (trimmedName.isEmpty) {
-                      ScaffoldMessenger.of(statefulCtx).showSnackBar(
+                      // Gunakan context utama (bukan dialog context) untuk SnackBar agar lebih aman
+                      ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Nama barang tidak boleh kosong!', style: TextStyle(color: Colors.white)),
                           backgroundColor: Colors.redAccent,
                           duration: Duration(seconds: 2),
                         ),
                       );
-                      setDialogState(() => isSaving = false);
                       return;
                     }
+
+                    // Hide keyboard safely
+                    FocusManager.instance.primaryFocus?.unfocus();
 
                     final newItem = <String, dynamic>{
                       'name': trimmedName,
@@ -374,8 +367,6 @@ class _TransactionFormFieldsState extends ConsumerState<TransactionFormFields> {
                       'price': dialogPrice,
                     };
 
-                    // Bug 3 FIX: Kembalikan data ke pemanggil lewat Navigator.pop
-                    // alih-alih memanggil setState() Parent secara langsung dari dalam dialog
                     Navigator.pop(dialogCtx, newItem);
                   },
                   style: ElevatedButton.styleFrom(
@@ -509,11 +500,43 @@ class _TransactionFormFieldsState extends ConsumerState<TransactionFormFields> {
         });
       }
 
+      String? photoUrl;
+
+      // Upload image via Backend if exists and not an asset
+      if (widget.imagePath != null && !widget.imagePath!.startsWith('assets/')) {
+        final file = File(widget.imagePath!);
+        if (file.existsSync()) {
+          final fileName = widget.imagePath!.split('/').last;
+          
+          try {
+            final formData = dio.FormData.fromMap({
+              'receipt': await dio.MultipartFile.fromFile(file.path, filename: fileName),
+            });
+
+            final response = await ref.read(apiClientProvider).post(
+              ApiEndpoints.uploadReceipt,
+              data: formData,
+            );
+            
+            if (response != null && response['success'] == true) {
+              photoUrl = response['data']['photoUrl'];
+            }
+          } catch (e) {
+            debugPrint('[TransactionFormFields] Failed to upload photo: $e');
+            // Continue saving transaction even if photo upload fails
+          }
+        }
+      } else if (widget.existingTransaction != null) {
+        // Keep existing photo if editing and no new photo
+        photoUrl = widget.existingTransaction?.fotoStruk;
+      }
+
       final Map<String, dynamic> transactionPayload = {
         'category_id': _selectedCategory!.id,
         'total': _total,
         'date': txDate,
         'nama_toko': _storeNameController.text.trim(),
+        'foto_struk': photoUrl,
         'details': detailsPayload,
       };
 

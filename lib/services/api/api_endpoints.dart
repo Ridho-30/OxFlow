@@ -7,7 +7,7 @@ class ApiEndpoints {
   static const String forgotPassword = '/auth/forgot-password';
   static const String resetPassword = '/auth/reset-password';
   static const String logout = '/auth/logout';
-  static const String refreshToken = '/auth/refresh-token';
+  static const String refreshToken = '/auth/refresh';
   static const String changePassword = '/auth/change-password';
 
   // Users
@@ -22,6 +22,7 @@ class ApiEndpoints {
   // Transactions
   static const String transactions = '/transactions';
   static String transactionDetail(String id) => '/transactions/$id';
+  static const String uploadReceipt = '/transactions/upload-receipt';
 
   // Budget
   static const String budget = '/budget';
