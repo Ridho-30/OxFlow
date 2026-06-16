@@ -63,33 +63,15 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       if (!mounted) return;
       setState(() => _isLoading = false);
 
-      // Show success dialog then redirect to login
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AlertDialog(
-          backgroundColor: const Color(0xFF141E2E),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Berhasil',
-              style: TextStyle(color: Colors.white)),
-          content: const Text(
-            'Kata sandi Anda berhasil diubah! Anda akan diarahkan ke halaman masuk untuk login kembali.',
-            style: TextStyle(color: Color(0xFF8A99AD)),
-          ),
+      // Show success message and go back
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kata sandi Anda berhasil diubah!'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
         ),
       );
-
-      Future.delayed(const Duration(seconds: 2), () {
-        if (!mounted) return;
-        ref.read(authProvider.notifier).logout();
-        Navigator.pop(context);
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => LoginScreen()),
-          (route) => false,
-        );
-      });
+      Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);

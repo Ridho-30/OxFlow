@@ -34,7 +34,7 @@ class AuthInterceptor extends Interceptor {
 
   // Prevent infinite refresh loops
   bool _isRefreshing = false;
-  static const String _refreshTokenPath = '/auth/refresh-token';
+  static const String _refreshTokenPath = '/auth/refresh';
 
   AuthInterceptor(this.dio);
 
@@ -96,21 +96,22 @@ class AuthInterceptor extends Interceptor {
       if (refreshToken == null || refreshToken.isEmpty) return false;
 
       // Use a CLEAN Dio instance without interceptors to avoid recursion
-      // and to prevent the AuthInterceptor from overwriting the Authorization
-      // header with the expired access token.
       final cleanDio = Dio(BaseOptions(
         baseUrl: ApiConstants.baseUrl + ApiConstants.apiVersion,
         connectTimeout: ApiConstants.connectTimeout,
         receiveTimeout: ApiConstants.receiveTimeout,
-        headers: {
-          ...ApiConstants.defaultHeaders,
-          'Authorization': 'Bearer $refreshToken',
-        },
+        headers: ApiConstants.defaultHeaders,
         contentType: 'application/json',
         responseType: ResponseType.json,
       ));
 
-      final response = await cleanDio.post(_refreshTokenPath);
+      // Backend expects the refresh token in the body (req.body.refreshToken)
+      // Also ensure the endpoint matches backend router, often it's '/auth/refresh' or '/auth/refresh-token'
+      // Assuming _refreshTokenPath is correct as per your routes.
+      final response = await cleanDio.post(
+        _refreshTokenPath,
+        data: {'refreshToken': refreshToken},
+      );
 
       final data = response.data is Map<String, dynamic>
           ? (response.data['data'] ?? response.data) as Map<String, dynamic>
